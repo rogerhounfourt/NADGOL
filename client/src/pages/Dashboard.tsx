@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { ATHLETES, FINANCIAL, ATTENDANCE, COMPETITIONS, getBirthdaysThisMonth, getCategory } from '@/lib/data';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import { Users, UserCheck, UserX, Gift, AlertCircle, Star, Trophy, Calendar, TrendingUp, Zap } from 'lucide-react';
+import { ATHLETES, FINANCIAL, ATTENDANCE, COMPETITIONS, getBirthdaysThisMonth } from '@/lib/data';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import { Users, UserCheck, UserX, TrendingUp, Trophy, AlertCircle, Zap, Target } from 'lucide-react';
 
 function AnimatedNumber({ value, duration = 1200 }: { value: number; duration?: number }) {
   const [display, setDisplay] = useState(0);
@@ -26,7 +26,7 @@ const EVOLUTION_DATA = [
   { month: 'Mai', atletas: 12, presenca: 90 },
 ];
 
-const PERF_DATA = [
+const PERFORMANCE_DATA = [
   { name: 'Lucas', score: 95 },
   { name: 'Pedro', score: 88 },
   { name: 'Gabriel', score: 82 },
@@ -34,89 +34,123 @@ const PERF_DATA = [
   { name: 'Felipe', score: 75 },
 ];
 
+const ATTENDANCE_DISTRIBUTION = [
+  { name: 'Presentes', value: 42, color: '#22C55E' },
+  { name: 'Ausentes', value: 3, color: '#EF4444' },
+  { name: 'Atrasados', value: 5, color: '#EAB308' },
+];
+
 export default function Dashboard() {
   const totalAthletes = ATHLETES.filter(a => a.status === 'active').length;
   const todayAttendance = ATTENDANCE.filter(a => a.date === '2026-05-15');
   const presentToday = todayAttendance.filter(a => a.status === 'present').length;
   const absentToday = todayAttendance.filter(a => a.status === 'absent').length;
+  const lateToday = todayAttendance.filter(a => a.status === 'late').length;
   const birthdays = getBirthdaysThisMonth();
   const pendingPayments = FINANCIAL.filter(f => f.status === 'pending' || f.status === 'overdue').length;
-  const topAthlete = ATHLETES.find(a => a.ranking === 1);
+  const attendanceRate = Math.round((presentToday / (presentToday + absentToday + lateToday)) * 100);
 
   const StatCard = ({ icon: Icon, label, value, sub, color, delay }: any) => (
     <div
-      className="nadgol-card"
       style={{
         padding: '20px',
+        background: '#111111',
+        border: '1px solid #1E1E1E',
+        borderRadius: '8px',
         opacity: 0,
         animation: `fadeInUp 0.5s cubic-bezier(0.23, 1, 0.32, 1) ${delay}ms forwards`,
+        transition: 'all 200ms ease-out',
+        cursor: 'pointer',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = '#1A1A1A';
+        e.currentTarget.style.borderColor = '#2A2A2A';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = '#111111';
+        e.currentTarget.style.borderColor = '#1E1E1E';
       }}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
         <div style={{
-          width: '40px', height: '40px', borderRadius: '8px',
-          background: `${color}18`,
+          width: '44px', height: '44px', borderRadius: '10px',
+          background: `${color}15`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
+          border: `1px solid ${color}30`,
         }}>
-          <Icon size={20} color={color} />
+          <Icon size={22} color={color} strokeWidth={1.5} />
         </div>
-        {sub && <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '11px', color: 'rgba(255,255,255,0.3)', background: '#1A1A1A', padding: '3px 8px', borderRadius: '4px' }}>{sub}</span>}
+        {sub && <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', color: color, background: `${color}15`, padding: '4px 10px', borderRadius: '4px', border: `1px solid ${color}30`, fontWeight: 600 }}>{sub}</span>}
       </div>
-      <p className="nadgol-stat-number" style={{ fontSize: '36px', color: '#fff', marginBottom: '4px' }}>
+      <p style={{ fontSize: '32px', fontWeight: 700, color: '#fff', marginBottom: '6px', fontFamily: 'Barlow Condensed, sans-serif', letterSpacing: '0.5px' }}>
         <AnimatedNumber value={typeof value === 'number' ? value : 0} />
         {typeof value === 'string' && value}
       </p>
-      <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: 'rgba(255,255,255,0.45)' }}>{label}</p>
+      <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontWeight: 500 }}>{label}</p>
+    </div>
+  );
+
+  const ChartCard = ({ title, children, delay }: any) => (
+    <div
+      style={{
+        padding: '24px',
+        background: '#111111',
+        border: '1px solid #1E1E1E',
+        borderRadius: '8px',
+        opacity: 0,
+        animation: `fadeInUp 0.5s cubic-bezier(0.23, 1, 0.32, 1) ${delay}ms forwards`,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+        <div style={{ width: '3px', height: '18px', background: '#CC1A1A', borderRadius: '2px' }} />
+        <h3 style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: '16px', color: '#fff', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+          {title}
+        </h3>
+      </div>
+      {children}
     </div>
   );
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1400px' }}>
-      {/* Welcome banner */}
+    <div style={{ padding: '24px', maxWidth: '1600px', margin: '0 auto' }}>
+      {/* Header with Shield */}
       <div style={{
-        marginBottom: '28px',
+        marginBottom: '32px',
         opacity: 0,
         animation: 'fadeInUp 0.5s cubic-bezier(0.23, 1, 0.32, 1) 0ms forwards',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '8px' }}>
           <img
             src="/manus-storage/68db7c69-d5fd-4129-8544-30bbc90c29b1_1c2e822c.jpg"
             alt="Nadgol Academy Shield"
-            style={{ width: '40px', height: 'auto', filter: 'drop-shadow(0 0 12px rgba(204,26,26,0.25))' }}
+            style={{ width: '48px', height: 'auto', filter: 'drop-shadow(0 0 16px rgba(204,26,26,0.3))' }}
           />
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ width: '3px', height: '20px', background: '#CC1A1A', borderRadius: '2px' }} />
-            <h2 style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 800, fontSize: '28px', color: '#fff', letterSpacing: '1px', textTransform: 'uppercase' }}>
-              Visão Geral da Academia
-            </h2>
+          <div>
+            <h1 style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 900, fontSize: '36px', color: '#fff', letterSpacing: '1px', textTransform: 'uppercase', lineHeight: 1, marginBottom: '4px' }}>
+              Dashboard
+            </h1>
+            <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.4)', letterSpacing: '1px', textTransform: 'uppercase' }}>
+              Visão Geral da Academia · Temporada 2026
+            </p>
           </div>
         </div>
-        <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: 'rgba(255,255,255,0.4)', marginLeft: '11px' }}>
-          Sexta-feira, 16 de Maio de 2026 · Temporada 2026
-        </p>
       </div>
 
-      {/* Stats grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '14px', marginBottom: '24px' }}>
+      {/* Key Metrics Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '32px' }}>
         <StatCard icon={Users} label="Total de Atletas" value={totalAthletes} color="#CC1A1A" delay={50} />
         <StatCard icon={UserCheck} label="Presentes Hoje" value={presentToday} sub="Hoje" color="#22C55E" delay={100} />
-        <StatCard icon={UserX} label="Ausentes Hoje" value={absentToday} color="#EF4444" delay={150} />
-        <StatCard icon={Gift} label="Aniversariantes" value={birthdays.length} sub="Este mês" color="#EAB308" delay={200} />
-        <StatCard icon={AlertCircle} label="Mensalidades Pendentes" value={pendingPayments} color="#F97316" delay={250} />
+        <StatCard icon={UserX} label="Ausentes" value={absentToday} color="#EF4444" delay={150} />
+        <StatCard icon={AlertCircle} label="Atrasados" value={lateToday} color="#EAB308" delay={200} />
+        <StatCard icon={TrendingUp} label="Taxa de Presença" value={`${attendanceRate}%`} color="#3B82F6" delay={250} />
         <StatCard icon={Trophy} label="Competições" value={COMPETITIONS.length} color="#A855F7" delay={300} />
       </div>
 
-      {/* Main content grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-        {/* Evolution chart */}
-        <div className="nadgol-card" style={{ padding: '20px', opacity: 0, animation: 'fadeInUp 0.5s ease-out 350ms forwards' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
-            <TrendingUp size={16} color="#CC1A1A" />
-            <h3 style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: '16px', color: '#fff', letterSpacing: '1px', textTransform: 'uppercase' }}>
-              Evolução de Atletas
-            </h3>
-          </div>
-          <ResponsiveContainer width="100%" height={180}>
+      {/* Main Charts Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '16px', marginBottom: '32px' }}>
+        {/* Evolution Chart */}
+        <ChartCard title="Evolução de Atletas" delay={350}>
+          <ResponsiveContainer width="100%" height={240}>
             <AreaChart data={EVOLUTION_DATA}>
               <defs>
                 <linearGradient id="gradAtletas" x1="0" y1="0" x2="0" y2="1">
@@ -126,130 +160,94 @@ export default function Dashboard() {
               </defs>
               <XAxis dataKey="month" tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 11, fontFamily: 'DM Sans' }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 11, fontFamily: 'DM Sans' }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ background: '#1A1A1A', border: '1px solid #2A2A2A', borderRadius: '6px', fontFamily: 'DM Sans', fontSize: '12px', color: '#fff' }} />
-              <Area type="monotone" dataKey="atletas" stroke="#CC1A1A" strokeWidth={2} fill="url(#gradAtletas)" dot={{ fill: '#CC1A1A', r: 4 }} />
+              <Tooltip contentStyle={{ background: '#1A1A1A', border: '1px solid #2A2A2A', borderRadius: '6px', fontFamily: 'DM Sans' }} />
+              <Area type="monotone" dataKey="atletas" stroke="#CC1A1A" strokeWidth={2} fill="url(#gradAtletas)" />
             </AreaChart>
           </ResponsiveContainer>
-        </div>
+        </ChartCard>
 
-        {/* Performance chart */}
-        <div className="nadgol-card" style={{ padding: '20px', opacity: 0, animation: 'fadeInUp 0.5s ease-out 400ms forwards' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
-            <Zap size={16} color="#CC1A1A" />
-            <h3 style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: '16px', color: '#fff', letterSpacing: '1px', textTransform: 'uppercase' }}>
-              Top Performance
-            </h3>
-          </div>
-          <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={PERF_DATA} barSize={28}>
-              <XAxis dataKey="name" tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 11, fontFamily: 'DM Sans' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 11, fontFamily: 'DM Sans' }} axisLine={false} tickLine={false} domain={[60, 100]} />
-              <Tooltip contentStyle={{ background: '#1A1A1A', border: '1px solid #2A2A2A', borderRadius: '6px', fontFamily: 'DM Sans', fontSize: '12px', color: '#fff' }} />
-              <Bar dataKey="score" fill="#CC1A1A" radius={[3, 3, 0, 0]} />
-            </BarChart>
+        {/* Attendance Distribution */}
+        <ChartCard title="Distribuição" delay={400}>
+          <ResponsiveContainer width="100%" height={240}>
+            <PieChart>
+              <Pie data={ATTENDANCE_DISTRIBUTION} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2} dataKey="value">
+                {ATTENDANCE_DISTRIBUTION.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip contentStyle={{ background: '#1A1A1A', border: '1px solid #2A2A2A', borderRadius: '6px', fontFamily: 'DM Sans' }} />
+            </PieChart>
           </ResponsiveContainer>
-        </div>
+        </ChartCard>
       </div>
 
-      {/* Bottom row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
-        {/* Athlete Highlight */}
-        {topAthlete && (
-          <div className="nadgol-card nadgol-card-active" style={{ padding: '20px', opacity: 0, animation: 'fadeInUp 0.5s ease-out 450ms forwards' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-              <Star size={16} color="#CC1A1A" />
-              <h3 style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: '14px', color: '#CC1A1A', letterSpacing: '2px', textTransform: 'uppercase' }}>
-                Atleta Destaque
-              </h3>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-              <div style={{
-                width: '52px', height: '52px', borderRadius: '50%',
-                background: 'linear-gradient(135deg, #CC1A1A, #991414)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 800, fontSize: '22px', color: '#fff',
-                border: '2px solid rgba(204,26,26,0.4)',
-              }}>
-                {topAthlete.name.charAt(0)}
-              </div>
-              <div>
-                <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: '18px', color: '#fff' }}>{topAthlete.name}</p>
-                <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>{topAthlete.position} · {getCategory(topAthlete.birthYear)}</p>
-              </div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
-              {[
-                { label: 'Gols', value: topAthlete.goals },
-                { label: 'Assist.', value: topAthlete.assists },
-                { label: 'Pres.', value: `${topAthlete.attendance}%` },
-              ].map(({ label, value }) => (
-                <div key={label} style={{ textAlign: 'center', background: '#1A1A1A', borderRadius: '4px', padding: '8px 4px' }}>
-                  <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 800, fontSize: '20px', color: '#CC1A1A' }}>{value}</p>
-                  <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', color: 'rgba(255,255,255,0.4)' }}>{label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+      {/* Performance and Financial Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px' }}>
+        {/* Top Performance */}
+        <ChartCard title="Top Performance" delay={450}>
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={PERFORMANCE_DATA}>
+              <XAxis dataKey="name" tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 10, fontFamily: 'DM Sans' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 11, fontFamily: 'DM Sans' }} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={{ background: '#1A1A1A', border: '1px solid #2A2A2A', borderRadius: '6px', fontFamily: 'DM Sans' }} />
+              <Bar dataKey="score" fill="#3B82F6" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
 
-        {/* Next trainings */}
-        <div className="nadgol-card" style={{ padding: '20px', opacity: 0, animation: 'fadeInUp 0.5s ease-out 500ms forwards' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-            <Calendar size={16} color="#CC1A1A" />
-            <h3 style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: '14px', color: '#fff', letterSpacing: '2px', textTransform: 'uppercase' }}>
-              Próximos Treinos
-            </h3>
-          </div>
-          {[
-            { day: 'Segunda', time: '08:00', turma: 'Sub-15/14', unit: 'Centro' },
-            { day: 'Terça', time: '14:00', turma: 'Sub-15/13', unit: 'Norte' },
-            { day: 'Quarta', time: '16:00', turma: 'Sub-13/12', unit: 'Sul' },
-            { day: 'Quinta', time: '07:00', turma: 'Performance Elite', unit: 'Studio CT' },
-          ].map((t, i) => (
-            <div key={i} style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '8px 0',
-              borderBottom: i < 3 ? '1px solid #1E1E1E' : 'none',
-            }}>
-              <div>
-                <p style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '13px', color: '#fff' }}>{t.turma}</p>
-                <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '11px', color: 'rgba(255,255,255,0.35)' }}>{t.day} · {t.unit}</p>
-              </div>
-              <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: '16px', color: '#CC1A1A' }}>{t.time}</span>
+        {/* Financial Status */}
+        <ChartCard title="Status Financeiro" delay={500}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: '#1A1A1A', borderRadius: '6px', border: '1px solid #2A2A2A' }}>
+              <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: 'rgba(255,255,255,0.7)' }}>Pagos</span>
+              <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '18px', fontWeight: 700, color: '#22C55E' }}>
+                {FINANCIAL.filter(f => f.status === 'paid').length}
+              </span>
             </div>
-          ))}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: '#1A1A1A', borderRadius: '6px', border: '1px solid #2A2A2A' }}>
+              <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: 'rgba(255,255,255,0.7)' }}>Pendentes</span>
+              <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '18px', fontWeight: 700, color: '#EAB308' }}>
+                {FINANCIAL.filter(f => f.status === 'pending').length}
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: '#1A1A1A', borderRadius: '6px', border: '1px solid #2A2A2A' }}>
+              <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: 'rgba(255,255,255,0.7)' }}>Atrasados</span>
+              <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '18px', fontWeight: 700, color: '#EF4444' }}>
+                {FINANCIAL.filter(f => f.status === 'overdue').length}
+              </span>
+            </div>
+          </div>
+        </ChartCard>
+      </div>
+
+      {/* Quick Actions */}
+      <div style={{
+        padding: '24px',
+        background: '#111111',
+        border: '1px solid #1E1E1E',
+        borderRadius: '8px',
+        opacity: 0,
+        animation: 'fadeInUp 0.5s cubic-bezier(0.23, 1, 0.32, 1) 550ms forwards',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+          <div style={{ width: '3px', height: '18px', background: '#CC1A1A', borderRadius: '2px' }} />
+          <h3 style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: '16px', color: '#fff', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+            Próximas Ações
+          </h3>
         </div>
-
-        {/* Competitions */}
-        <div className="nadgol-card" style={{ padding: '20px', opacity: 0, animation: 'fadeInUp 0.5s ease-out 550ms forwards' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-            <Trophy size={16} color="#CC1A1A" />
-            <h3 style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: '14px', color: '#fff', letterSpacing: '2px', textTransform: 'uppercase' }}>
-              Competições
-            </h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+          <div style={{ padding: '12px', background: '#1A1A1A', borderRadius: '6px', border: '1px solid #2A2A2A', cursor: 'pointer', transition: 'all 200ms' }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#CC1A1A'; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#2A2A2A'; }}>
+            <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}>Aniversariantes</p>
+            <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '20px', fontWeight: 700, color: '#EAB308' }}>{birthdays.length}</p>
           </div>
-          {COMPETITIONS.map((comp, i) => (
-            <div key={comp.id} style={{
-              padding: '10px 0',
-              borderBottom: i < COMPETITIONS.length - 1 ? '1px solid #1E1E1E' : 'none',
-            }}>
-              <p style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '13px', color: '#fff', marginBottom: '4px' }}>{comp.name}</p>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '11px', color: 'rgba(255,255,255,0.35)' }}>
-                  {new Date(comp.date).toLocaleDateString('pt-BR')}
-                </p>
-                {comp.result ? (
-                  <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '11px', color: '#22C55E', background: 'rgba(34,197,94,0.1)', padding: '2px 8px', borderRadius: '4px' }}>
-                    {comp.result}
-                  </span>
-                ) : (
-                  <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '11px', color: '#EAB308', background: 'rgba(234,179,8,0.1)', padding: '2px 8px', borderRadius: '4px' }}>
-                    Em breve
-                  </span>
-                )}
-              </div>
-            </div>
-          ))}
+          <div style={{ padding: '12px', background: '#1A1A1A', borderRadius: '6px', border: '1px solid #2A2A2A', cursor: 'pointer', transition: 'all 200ms' }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#CC1A1A'; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#2A2A2A'; }}>
+            <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}>Mensalidades Pendentes</p>
+            <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '20px', fontWeight: 700, color: '#EF4444' }}>{pendingPayments}</p>
+          </div>
+          <div style={{ padding: '12px', background: '#1A1A1A', borderRadius: '6px', border: '1px solid #2A2A2A', cursor: 'pointer', transition: 'all 200ms' }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#CC1A1A'; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#2A2A2A'; }}>
+            <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}>Próximas Competições</p>
+            <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '20px', fontWeight: 700, color: '#A855F7' }}>{COMPETITIONS.length}</p>
+          </div>
         </div>
       </div>
     </div>

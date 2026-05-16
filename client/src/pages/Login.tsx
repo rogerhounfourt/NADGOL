@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useApp } from '@/contexts/AppContext';
-import { NadgolShield } from '@/components/IntroScreen';
 import { USERS, UserRole } from '@/lib/data';
 import { Shield, User, Users, Dumbbell } from 'lucide-react';
 
@@ -34,14 +33,15 @@ export default function Login() {
       position: 'relative',
       overflow: 'hidden',
     }}>
-      {/* Background pattern */}
+      {/* Premium background gradients */}
       <div style={{
         position: 'absolute', inset: 0,
-        backgroundImage: `radial-gradient(circle at 20% 50%, rgba(204,26,26,0.06) 0%, transparent 50%),
-                          radial-gradient(circle at 80% 20%, rgba(204,26,26,0.04) 0%, transparent 40%)`,
+        backgroundImage: `radial-gradient(circle at 20% 50%, rgba(204,26,26,0.08) 0%, transparent 50%),
+                          radial-gradient(circle at 80% 20%, rgba(204,26,26,0.05) 0%, transparent 40%),
+                          radial-gradient(circle at 50% 80%, rgba(51,152,255,0.04) 0%, transparent 50%)`,
       }} />
 
-      {/* Grid lines */}
+      {/* Grid pattern */}
       <div style={{
         position: 'absolute', inset: 0,
         backgroundImage: `linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
@@ -49,91 +49,157 @@ export default function Login() {
         backgroundSize: '60px 60px',
       }} />
 
+      {/* Animated shield watermark */}
+      <div style={{
+        position: 'absolute',
+        top: '-10%',
+        right: '-5%',
+        opacity: 0.08,
+        animation: 'float 6s ease-in-out infinite',
+      }}>
+        <img
+          src="/manus-storage/68db7c69-d5fd-4129-8544-30bbc90c29b1_1c2e822c.jpg"
+          alt="Background"
+          style={{ width: '400px', height: 'auto', filter: 'blur(1px)' }}
+        />
+      </div>
+
       <div style={{
         position: 'relative', zIndex: 1,
-        width: '100%', maxWidth: '440px',
+        width: '100%', maxWidth: '480px',
         animation: 'fadeInUp 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards',
       }}>
-        {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px', filter: 'drop-shadow(0 0 24px rgba(204,26,26,0.35))' }}>
+        {/* Header with Shield */}
+        <div style={{ textAlign: 'center', marginBottom: '48px' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
             <img
               src="/manus-storage/68db7c69-d5fd-4129-8544-30bbc90c29b1_1c2e822c.jpg"
               alt="Nadgol Academy Shield"
-              style={{ width: '100px', height: 'auto', filter: 'drop-shadow(0 8px 32px rgba(0,0,0,0.7))' }}
+              style={{
+                width: '110px',
+                height: 'auto',
+                filter: 'drop-shadow(0 0 32px rgba(204,26,26,0.4)) drop-shadow(0 8px 24px rgba(0,0,0,0.8))',
+                animation: 'fadeInDown 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards',
+              }}
             />
           </div>
           <h1 style={{
             fontFamily: 'Barlow Condensed, sans-serif',
-            fontWeight: 900, fontSize: '36px',
-            color: '#fff', letterSpacing: '4px',
-            textTransform: 'uppercase', lineHeight: 1,
+            fontWeight: 900, fontSize: '42px',
+            color: '#fff', letterSpacing: '3px',
+            textTransform: 'uppercase', lineHeight: 1, marginBottom: '8px',
+            animation: 'fadeInUp 0.6s cubic-bezier(0.23, 1, 0.32, 1) 100ms forwards',
+            opacity: 0,
           }}>NADGOL</h1>
           <p style={{
             fontFamily: 'DM Sans, sans-serif',
-            fontSize: '11px', color: 'rgba(255,255,255,0.4)',
-            letterSpacing: '6px', textTransform: 'uppercase', marginTop: '4px',
+            fontSize: '12px', color: 'rgba(255,255,255,0.4)',
+            letterSpacing: '5px', textTransform: 'uppercase', marginBottom: '16px',
+            animation: 'fadeInUp 0.6s cubic-bezier(0.23, 1, 0.32, 1) 150ms forwards',
+            opacity: 0,
           }}>ACADEMY</p>
-          <div style={{ width: '40px', height: '2px', background: '#CC1A1A', margin: '16px auto 0' }} />
-          <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: 'rgba(255,255,255,0.4)', marginTop: '12px' }}>
+          <div style={{
+            width: '48px', height: '2px', background: '#CC1A1A', margin: '0 auto 16px',
+            animation: 'scaleIn 0.6s cubic-bezier(0.23, 1, 0.32, 1) 200ms forwards',
+            opacity: 0,
+          }} />
+          <p style={{
+            fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: 'rgba(255,255,255,0.5)',
+            letterSpacing: '1px',
+            animation: 'fadeInUp 0.6s cubic-bezier(0.23, 1, 0.32, 1) 250ms forwards',
+            opacity: 0,
+          }}>
             Selecione seu perfil de acesso
           </p>
         </div>
 
-        {/* Role selection */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
-          {ROLE_OPTIONS.map(({ role, label, desc, icon: Icon, color }) => {
-            const isSelected = selectedRole === role;
-            const isHovered = hoveredRole === role;
+        {/* Role Selection Cards */}
+        <div style={{ display: 'grid', gap: '12px', marginBottom: '24px' }}>
+          {ROLE_OPTIONS.map((option, idx) => {
+            const Icon = option.icon;
+            const isSelected = selectedRole === option.role;
+            const isHovered = hoveredRole === option.role;
+
             return (
               <button
-                key={role}
-                onClick={() => setSelectedRole(role)}
-                onMouseEnter={() => setHoveredRole(role)}
+                key={option.role}
+                onClick={() => setSelectedRole(option.role)}
+                onMouseEnter={() => setHoveredRole(option.role)}
                 onMouseLeave={() => setHoveredRole(null)}
                 style={{
-                  width: '100%',
-                  display: 'flex', alignItems: 'center', gap: '14px',
-                  padding: '14px 16px',
-                  background: isSelected ? `rgba(204,26,26,0.1)` : isHovered ? 'rgba(255,255,255,0.04)' : '#111111',
-                  border: `1px solid ${isSelected ? '#CC1A1A' : '#2A2A2A'}`,
-                  borderLeft: `3px solid ${isSelected ? '#CC1A1A' : isHovered ? '#3A3A3A' : '#2A2A2A'}`,
-                  borderRadius: '6px',
+                  padding: '20px',
+                  background: isSelected ? '#CC1A1A' : '#111111',
+                  border: `2px solid ${isSelected ? '#CC1A1A' : isHovered ? '#2A2A2A' : '#1E1E1E'}`,
+                  borderRadius: '10px',
                   cursor: 'pointer',
-                  transition: 'all 150ms ease-out',
-                  textAlign: 'left',
-                  transform: isSelected ? 'scale(1.01)' : 'scale(1)',
+                  transition: 'all 200ms cubic-bezier(0.23, 1, 0.32, 1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '16px',
+                  opacity: 0,
+                  animation: `fadeInUp 0.5s cubic-bezier(0.23, 1, 0.32, 1) ${300 + idx * 50}ms forwards`,
+                  transform: isHovered && !isSelected ? 'translateY(-2px)' : 'translateY(0)',
+                  boxShadow: isSelected ? `0 0 24px ${option.color}40` : isHovered ? '0 8px 24px rgba(0,0,0,0.3)' : 'none',
                 }}
               >
                 <div style={{
-                  width: '40px', height: '40px',
-                  borderRadius: '8px',
-                  background: isSelected ? `rgba(204,26,26,0.2)` : 'rgba(255,255,255,0.06)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '10px',
+                  background: isSelected ? 'rgba(255,255,255,0.15)' : `${option.color}15`,
+                  border: `1px solid ${isSelected ? 'rgba(255,255,255,0.2)' : `${option.color}30`}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   flexShrink: 0,
-                  transition: 'background 150ms',
                 }}>
-                  <Icon size={20} color={isSelected ? '#CC1A1A' : 'rgba(255,255,255,0.5)'} />
+                  <Icon size={24} color={isSelected ? '#fff' : option.color} strokeWidth={1.5} />
                 </div>
-                <div>
+                <div style={{ textAlign: 'left', flex: 1 }}>
                   <p style={{
-                    fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '14px',
-                    color: isSelected ? '#fff' : 'rgba(255,255,255,0.8)',
-                  }}>{label}</p>
+                    fontFamily: 'Barlow Condensed, sans-serif',
+                    fontSize: '16px',
+                    fontWeight: 700,
+                    color: isSelected ? '#fff' : '#fff',
+                    letterSpacing: '0.5px',
+                    textTransform: 'uppercase',
+                    marginBottom: '2px',
+                  }}>
+                    {option.label}
+                  </p>
                   <p style={{
-                    fontFamily: 'DM Sans, sans-serif', fontSize: '12px',
-                    color: 'rgba(255,255,255,0.35)',
-                  }}>{desc}</p>
+                    fontFamily: 'DM Sans, sans-serif',
+                    fontSize: '12px',
+                    color: isSelected ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.5)',
+                  }}>
+                    {option.desc}
+                  </p>
                 </div>
-                {isSelected && (
-                  <div style={{ marginLeft: 'auto', width: '8px', height: '8px', borderRadius: '50%', background: '#CC1A1A' }} />
-                )}
+                <div style={{
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '50%',
+                  border: `2px solid ${isSelected ? '#fff' : 'rgba(255,255,255,0.2)'}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 200ms',
+                }}>
+                  {isSelected && (
+                    <div style={{
+                      width: '12px',
+                      height: '12px',
+                      borderRadius: '50%',
+                      background: '#fff',
+                    }} />
+                  )}
+                </div>
               </button>
             );
           })}
         </div>
 
-        {/* Login button */}
+        {/* Login Button */}
         <button
           onClick={handleLogin}
           disabled={!selectedRole}
@@ -141,25 +207,47 @@ export default function Login() {
             width: '100%',
             padding: '14px',
             background: selectedRole ? '#CC1A1A' : '#1A1A1A',
-            color: selectedRole ? '#fff' : 'rgba(255,255,255,0.2)',
-            border: 'none',
-            borderRadius: '6px',
+            color: selectedRole ? '#fff' : 'rgba(255,255,255,0.3)',
+            border: `1px solid ${selectedRole ? '#CC1A1A' : '#2A2A2A'}`,
+            borderRadius: '8px',
             fontFamily: 'Barlow Condensed, sans-serif',
-            fontWeight: 700, fontSize: '16px',
-            letterSpacing: '3px', textTransform: 'uppercase',
+            fontSize: '14px',
+            fontWeight: 700,
+            letterSpacing: '2px',
+            textTransform: 'uppercase',
             cursor: selectedRole ? 'pointer' : 'not-allowed',
-            transition: 'all 150ms ease-out',
-            transform: 'scale(1)',
+            transition: 'all 200ms cubic-bezier(0.23, 1, 0.32, 1)',
+            opacity: 0,
+            animation: 'fadeInUp 0.5s cubic-bezier(0.23, 1, 0.32, 1) 550ms forwards',
+            boxShadow: selectedRole ? '0 0 24px rgba(204,26,26,0.3)' : 'none',
           }}
-          onMouseEnter={e => { if (selectedRole) e.currentTarget.style.background = '#E02020'; }}
-          onMouseLeave={e => { if (selectedRole) e.currentTarget.style.background = '#CC1A1A'; }}
-          onMouseDown={e => { if (selectedRole) e.currentTarget.style.transform = 'scale(0.97)'; }}
-          onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+          onMouseEnter={(e) => {
+            if (selectedRole) {
+              e.currentTarget.style.boxShadow = '0 0 32px rgba(204,26,26,0.5)';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (selectedRole) {
+              e.currentTarget.style.boxShadow = '0 0 24px rgba(204,26,26,0.3)';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }
+          }}
         >
-          ACESSAR PLATAFORMA
+          Acessar Plataforma
         </button>
 
-        <p style={{ textAlign: 'center', fontFamily: 'DM Sans, sans-serif', fontSize: '11px', color: 'rgba(255,255,255,0.2)', marginTop: '20px' }}>
+        {/* Footer */}
+        <p style={{
+          fontFamily: 'DM Sans, sans-serif',
+          fontSize: '11px',
+          color: 'rgba(255,255,255,0.3)',
+          textAlign: 'center',
+          marginTop: '24px',
+          letterSpacing: '1px',
+          animation: 'fadeIn 0.6s cubic-bezier(0.23, 1, 0.32, 1) 600ms forwards',
+          opacity: 0,
+        }}>
           © 2026 Nadgol Academy · Todos os direitos reservados
         </p>
       </div>

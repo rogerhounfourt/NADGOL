@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { ATHLETES, CLASSES, getCategory } from '@/lib/data';
-import { CheckCircle2, XCircle, Clock, Flame, Zap, TrendingUp, Wrench } from 'lucide-react';
+import { ATHLETES, CLASSES } from '@/lib/data';
+import { CheckCircle2, XCircle, Clock } from 'lucide-react';
 
 type Status = 'present' | 'absent' | 'late' | null;
 type Performance = 'highlight' | 'great' | 'evolving' | 'needs_work' | null;
@@ -31,138 +31,218 @@ export default function Attendance() {
   const lateCount = Object.values(records).filter(r => r.status === 'late').length;
 
   return (
-    <div style={{ padding: '24px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
-        <div style={{ width: '3px', height: '20px', background: '#CC1A1A', borderRadius: '2px' }} />
-        <h2 style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 800, fontSize: '24px', color: '#fff', textTransform: 'uppercase', letterSpacing: '1px' }}>
-          Lista de Presença
-        </h2>
-      </div>
-
-      {/* Class selector */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
-        {CLASSES.map(c => (
-          <button
-            key={c.id}
-            onClick={() => setSelectedClass(c.id)}
-            style={{
-              padding: '8px 14px',
-              background: selectedClass === c.id ? '#CC1A1A' : '#111111',
-              border: `1px solid ${selectedClass === c.id ? '#CC1A1A' : '#2A2A2A'}`,
-              borderRadius: '6px',
-              color: selectedClass === c.id ? '#fff' : 'rgba(255,255,255,0.5)',
-              fontFamily: 'DM Sans, sans-serif', fontSize: '12px', fontWeight: 500,
-              cursor: 'pointer', transition: 'all 150ms',
-            }}
-          >
-            {c.name}
-          </button>
-        ))}
-      </div>
-
-      {/* Summary */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '20px' }}>
-        {[
-          { label: 'Presentes', value: presentCount, color: '#22C55E' },
-          { label: 'Ausentes', value: absentCount, color: '#EF4444' },
-          { label: 'Atrasados', value: lateCount, color: '#EAB308' },
-        ].map(({ label, value, color }) => (
-          <div key={label} className="nadgol-card" style={{ padding: '14px', textAlign: 'center' }}>
-            <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 800, fontSize: '32px', color, lineHeight: 1 }}>{value}</p>
-            <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>{label}</p>
+    <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
+      {/* Header */}
+      <div style={{
+        marginBottom: '32px',
+        opacity: 0,
+        animation: 'fadeInUp 0.5s cubic-bezier(0.23, 1, 0.32, 1) 0ms forwards',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '8px' }}>
+          <img
+            src="/manus-storage/68db7c69-d5fd-4129-8544-30bbc90c29b1_1c2e822c.jpg"
+            alt="Nadgol Academy Shield"
+            style={{ width: '44px', height: 'auto', filter: 'drop-shadow(0 0 16px rgba(204,26,26,0.3))' }}
+          />
+          <div>
+            <h1 style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 900, fontSize: '32px', color: '#fff', letterSpacing: '1px', textTransform: 'uppercase', lineHeight: 1, marginBottom: '4px' }}>
+              Lista de Presença
+            </h1>
+            <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.4)', letterSpacing: '1px' }}>
+              {cls.name} · {athletes.length} atletas
+            </p>
           </div>
-        ))}
+        </div>
       </div>
 
-      {/* Athletes list */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {athletes.map((athlete, i) => {
-          const rec = records[athlete.id] || { status: null, performance: null };
+      {/* Stats Summary */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+        <div style={{ padding: '16px', background: '#111111', border: '1px solid #1E1E1E', borderRadius: '8px', textAlign: 'center' }}>
+          <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '11px', color: 'rgba(255,255,255,0.5)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>Presentes</p>
+          <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '28px', fontWeight: 700, color: '#22C55E' }}>{presentCount}</p>
+        </div>
+        <div style={{ padding: '16px', background: '#111111', border: '1px solid #1E1E1E', borderRadius: '8px', textAlign: 'center' }}>
+          <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '11px', color: 'rgba(255,255,255,0.5)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>Ausentes</p>
+          <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '28px', fontWeight: 700, color: '#EF4444' }}>{absentCount}</p>
+        </div>
+        <div style={{ padding: '16px', background: '#111111', border: '1px solid #1E1E1E', borderRadius: '8px', textAlign: 'center' }}>
+          <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '11px', color: 'rgba(255,255,255,0.5)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>Atrasados</p>
+          <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '28px', fontWeight: 700, color: '#EAB308' }}>{lateCount}</p>
+        </div>
+      </div>
+
+      {/* Class Selector */}
+      <div style={{ marginBottom: '24px' }}>
+        <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>Selecione a Turma</p>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          {CLASSES.map(c => (
+            <button
+              key={c.id}
+              onClick={() => setSelectedClass(c.id)}
+              style={{
+                padding: '10px 16px',
+                background: selectedClass === c.id ? '#CC1A1A' : '#111111',
+                color: selectedClass === c.id ? '#fff' : 'rgba(255,255,255,0.7)',
+                border: `1px solid ${selectedClass === c.id ? '#CC1A1A' : '#1E1E1E'}`,
+                borderRadius: '6px',
+                fontFamily: 'DM Sans, sans-serif',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 200ms ease-out',
+                letterSpacing: '0.5px',
+              }}
+              onMouseEnter={(e) => {
+                if (selectedClass !== c.id) {
+                  e.currentTarget.style.borderColor = '#2A2A2A';
+                  e.currentTarget.style.background = '#1A1A1A';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (selectedClass !== c.id) {
+                  e.currentTarget.style.borderColor = '#1E1E1E';
+                  e.currentTarget.style.background = '#111111';
+                }
+              }}
+            >
+              {c.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Athletes List */}
+      <div style={{ display: 'grid', gap: '12px' }}>
+        {athletes.map((athlete, idx) => {
+          const record = records[athlete.id] || { status: null, performance: null };
           return (
             <div
               key={athlete.id}
-              className="nadgol-card"
               style={{
-                padding: '14px 16px',
+                padding: '16px',
+                background: '#111111',
+                border: '1px solid #1E1E1E',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
                 opacity: 0,
-                animation: `fadeInUp 0.4s cubic-bezier(0.23, 1, 0.32, 1) ${i * 60}ms forwards`,
-                borderLeft: rec.status === 'present' ? '2px solid #22C55E' : rec.status === 'absent' ? '2px solid #EF4444' : rec.status === 'late' ? '2px solid #EAB308' : '2px solid transparent',
+                animation: `fadeInUp 0.5s cubic-bezier(0.23, 1, 0.32, 1) ${100 + idx * 30}ms forwards`,
+                transition: 'all 200ms ease-out',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#2A2A2A';
+                e.currentTarget.style.background = '#1A1A1A';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#1E1E1E';
+                e.currentTarget.style.background = '#111111';
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                {/* Avatar */}
-                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, #CC1A1A, #991414)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 800, fontSize: '18px', color: '#fff', flexShrink: 0 }}>
-                  {athlete.name.charAt(0)}
-                </div>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '14px', fontWeight: 600, color: '#fff', marginBottom: '4px' }}>
+                  {athlete.name}
+                </p>
+                <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>
+                  {athlete.position} · {new Date().getFullYear() - athlete.birthYear} anos
+                </p>
+              </div>
 
-                {/* Name */}
-                <div style={{ flex: 1, minWidth: '120px' }}>
-                  <p style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '14px', color: '#fff' }}>{athlete.name}</p>
-                  <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>{athlete.position} · {getCategory(athlete.birthYear)}</p>
-                </div>
+              {/* Status Buttons */}
+              <div style={{ display: 'flex', gap: '8px', marginRight: '16px' }}>
+                <button
+                  onClick={() => setStatus(athlete.id, 'present')}
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '6px',
+                    background: record.status === 'present' ? '#22C55E' : '#1A1A1A',
+                    border: `1px solid ${record.status === 'present' ? '#22C55E' : '#2A2A2A'}`,
+                    color: record.status === 'present' ? '#fff' : 'rgba(255,255,255,0.5)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 150ms ease-out',
+                    fontSize: '16px',
+                  }}
+                  title="Presente"
+                >
+                  ✓
+                </button>
+                <button
+                  onClick={() => setStatus(athlete.id, 'late')}
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '6px',
+                    background: record.status === 'late' ? '#EAB308' : '#1A1A1A',
+                    border: `1px solid ${record.status === 'late' ? '#EAB308' : '#2A2A2A'}`,
+                    color: record.status === 'late' ? '#000' : 'rgba(255,255,255,0.5)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 150ms ease-out',
+                    fontSize: '16px',
+                    fontWeight: 600,
+                  }}
+                  title="Atrasado"
+                >
+                  ⏱
+                </button>
+                <button
+                  onClick={() => setStatus(athlete.id, 'absent')}
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '6px',
+                    background: record.status === 'absent' ? '#EF4444' : '#1A1A1A',
+                    border: `1px solid ${record.status === 'absent' ? '#EF4444' : '#2A2A2A'}`,
+                    color: record.status === 'absent' ? '#fff' : 'rgba(255,255,255,0.5)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 150ms ease-out',
+                    fontSize: '16px',
+                  }}
+                  title="Ausente"
+                >
+                  ✕
+                </button>
+              </div>
 
-                {/* Status buttons */}
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  {[
-                    { status: 'present' as Status, icon: CheckCircle2, color: '#22C55E', label: 'P' },
-                    { status: 'absent' as Status, icon: XCircle, color: '#EF4444', label: 'F' },
-                    { status: 'late' as Status, icon: Clock, color: '#EAB308', label: 'A' },
-                  ].map(({ status, icon: Icon, color, label }) => (
-                    <button
-                      key={status}
-                      onClick={() => setStatus(athlete.id, rec.status === status ? null : status)}
-                      style={{
-                        width: '36px', height: '36px',
-                        borderRadius: '6px',
-                        background: rec.status === status ? `${color}22` : '#1A1A1A',
-                        border: `1px solid ${rec.status === status ? color : '#2A2A2A'}`,
-                        color: rec.status === status ? color : 'rgba(255,255,255,0.3)',
-                        cursor: 'pointer', transition: 'all 150ms',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}
-                    >
-                      <Icon size={16} />
-                    </button>
-                  ))}
-                </div>
-
-                {/* Performance */}
-                {rec.status === 'present' && (
-                  <div style={{ display: 'flex', gap: '4px' }}>
-                    {PERF_OPTIONS.map(opt => (
-                      <button
-                        key={opt.key}
-                        onClick={() => setPerf(athlete.id, rec.performance === opt.key ? null : opt.key)}
-                        title={opt.label}
-                        style={{
-                          width: '32px', height: '32px',
-                          borderRadius: '6px',
-                          background: rec.performance === opt.key ? `${opt.color}22` : '#1A1A1A',
-                          border: `1px solid ${rec.performance === opt.key ? opt.color : '#2A2A2A'}`,
-                          cursor: 'pointer', transition: 'all 150ms',
-                          fontSize: '14px',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        }}
-                      >
-                        {opt.icon}
-                      </button>
-                    ))}
-                  </div>
-                )}
+              {/* Performance Evaluation */}
+              <div style={{ display: 'flex', gap: '6px' }}>
+                {PERF_OPTIONS.map(opt => (
+                  <button
+                    key={opt.key}
+                    onClick={() => setPerf(athlete.id, opt.key)}
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '6px',
+                      background: record.performance === opt.key ? opt.color + '20' : '#1A1A1A',
+                      border: `1px solid ${record.performance === opt.key ? opt.color : '#2A2A2A'}`,
+                      color: opt.color,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 150ms ease-out',
+                      fontSize: '18px',
+                      fontWeight: 600,
+                    }}
+                    title={opt.label}
+                  >
+                    {opt.icon}
+                  </button>
+                ))}
               </div>
             </div>
           );
         })}
-      </div>
-
-      {/* Save button */}
-      <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
-        <button
-          className="nadgol-btn-primary"
-          style={{ padding: '12px 28px', borderRadius: '6px', fontSize: '14px', letterSpacing: '1px' }}
-        >
-          SALVAR PRESENÇA
-        </button>
       </div>
     </div>
   );
