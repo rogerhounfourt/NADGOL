@@ -9,28 +9,28 @@ interface IntroScreenProps {
 
 const INTRO_CONFIG = {
   coach: {
-    image: 'https://d2xsxph8kpxj0f.cloudfront.net/310519663666237756/iKNeWTuZ5pz2AxmTY4qpFt/intro-coach-aQjQwvLYv57u4foVh4TWAN.webp',
+    image: 'https://d2xsxph8kpxj0f.cloudfront.net/310519663666237756/iKNeWTuZ5pz2AxmTY4qpFt/locker-room-athlete-MVPTGtpgeBYcX5jmQSqiQo.webp',
     title: 'BEM-VINDO,',
     subtitle: 'SALA DE COMISSÃO TÉCNICA',
     tagline: 'Onde campeões são formados.',
     roleLabel: 'TREINADOR',
   },
   parent: {
-    image: 'https://d2xsxph8kpxj0f.cloudfront.net/310519663666237756/iKNeWTuZ5pz2AxmTY4qpFt/intro-director-WS3nn84cERhjSAZ97Gzg2Q.webp',
+    image: 'https://d2xsxph8kpxj0f.cloudfront.net/310519663666237756/iKNeWTuZ5pz2AxmTY4qpFt/director-office-parents-U9mfrqF6gDQyEtoL5gxDD5.webp',
     title: 'BEM-VINDO,',
     subtitle: 'SALA DE DIRETORIA',
     tagline: 'Acompanhe a jornada do seu atleta.',
     roleLabel: 'RESPONSÁVEL',
   },
   athlete: {
-    image: 'https://d2xsxph8kpxj0f.cloudfront.net/310519663666237756/iKNeWTuZ5pz2AxmTY4qpFt/intro-locker-nJuzFGr4ZdV8oV8ChGuy6y.webp',
+    image: 'https://d2xsxph8kpxj0f.cloudfront.net/310519663666237756/iKNeWTuZ5pz2AxmTY4qpFt/locker-room-athlete-MVPTGtpgeBYcX5jmQSqiQo.webp',
     title: 'BEM-VINDO,',
     subtitle: 'VESTIÁRIO NADGOL ACADEMY',
     tagline: 'É hora de mostrar seu talento.',
     roleLabel: 'ATLETA',
   },
   admin: {
-    image: 'https://d2xsxph8kpxj0f.cloudfront.net/310519663666237756/iKNeWTuZ5pz2AxmTY4qpFt/intro-ops-8na9rggenVLNwGimmpMeJ2.webp',
+    image: 'https://d2xsxph8kpxj0f.cloudfront.net/310519663666237756/iKNeWTuZ5pz2AxmTY4qpFt/operations-center-admin-GbUqoSx4LCdch8i4H8bXia.webp',
     title: 'BEM-VINDO,',
     subtitle: 'CENTRAL OPERACIONAL',
     tagline: 'Gestão total da academia.',
@@ -76,15 +76,28 @@ export default function IntroScreen({ role, name, onComplete }: IntroScreenProps
       <div className="absolute bottom-0 left-0 right-0 h-1" style={{ background: '#CC1A1A' }} />
 
       {/* Shield watermark in corner */}
-      <div className="absolute top-8 right-8 opacity-20" style={{
-        opacity: phase === 'text' ? 0.15 : 0,
+      <div className="absolute top-8 right-8" style={{
+        opacity: phase === 'text' ? 0.2 : 0,
         transition: 'opacity 600ms ease-out',
         transitionDelay: '600ms',
       }}>
         <img
           src="/manus-storage/68db7c69-d5fd-4129-8544-30bbc90c29b1_1c2e822c.jpg"
           alt="Nadgol Academy Shield"
-          style={{ width: '100px', height: 'auto', filter: 'drop-shadow(0 0 20px rgba(204,26,26,0.3))' }}
+          style={{ width: '120px', height: 'auto', filter: 'drop-shadow(0 0 32px rgba(204,26,26,0.5)) drop-shadow(0 0 16px rgba(204,26,26,0.3))' }}
+        />
+      </div>
+
+      {/* Shield watermark bottom left */}
+      <div className="absolute bottom-12 left-8" style={{
+        opacity: phase === 'text' ? 0.12 : 0,
+        transition: 'opacity 600ms ease-out',
+        transitionDelay: '700ms',
+      }}>
+        <img
+          src="/manus-storage/68db7c69-d5fd-4129-8544-30bbc90c29b1_1c2e822c.jpg"
+          alt="Nadgol Academy Shield"
+          style={{ width: '80px', height: 'auto', filter: 'drop-shadow(0 0 24px rgba(204,26,26,0.4))' }}
         />
       </div>
 
