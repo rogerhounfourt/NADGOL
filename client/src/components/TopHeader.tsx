@@ -1,5 +1,5 @@
-import { useApp } from '@/contexts/AppContext';
 import { Bell, Menu, Search } from 'lucide-react';
+import { useApp } from '@/contexts/AppContext';
 import { NOTIFICATIONS } from '@/lib/data';
 
 const SECTION_TITLES: Record<string, string> = {
@@ -44,21 +44,28 @@ export default function TopHeader() {
         >
           <Menu size={20} />
         </button>
-        <div>
-          <h1 style={{
-            fontFamily: 'Barlow Condensed, sans-serif',
-            fontWeight: 700,
-            fontSize: '22px',
-            color: '#fff',
-            letterSpacing: '0.05em',
-            textTransform: 'uppercase',
-            lineHeight: 1,
-          }}>
-            {SECTION_TITLES[activeSection] || activeSection}
-          </h1>
-          <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '11px', color: 'rgba(255,255,255,0.35)', letterSpacing: '1px' }}>
-            NADGOL ACADEMY
-          </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <img
+            src="/manus-storage/68db7c69-d5fd-4129-8544-30bbc90c29b1_1c2e822c.jpg"
+            alt="Nadgol Academy Shield"
+            style={{ width: '36px', height: 'auto', filter: 'drop-shadow(0 0 10px rgba(204,26,26,0.2))' }}
+          />
+          <div>
+            <h1 style={{
+              fontFamily: 'Barlow Condensed, sans-serif',
+              fontWeight: 700,
+              fontSize: '22px',
+              color: '#fff',
+              letterSpacing: '0.05em',
+              textTransform: 'uppercase',
+              lineHeight: 1,
+            }}>
+              {SECTION_TITLES[activeSection] || activeSection}
+            </h1>
+            <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '11px', color: 'rgba(255,255,255,0.35)', letterSpacing: '1px' }}>
+              NADGOL ACADEMY
+            </p>
+          </div>
         </div>
       </div>
 

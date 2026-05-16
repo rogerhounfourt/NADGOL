@@ -56,8 +56,12 @@ export default function Login() {
       }}>
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
-            <NadgolShield size={56} />
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px', filter: 'drop-shadow(0 0 24px rgba(204,26,26,0.35))' }}>
+            <img
+              src="/manus-storage/68db7c69-d5fd-4129-8544-30bbc90c29b1_1c2e822c.jpg"
+              alt="Nadgol Academy Shield"
+              style={{ width: '100px', height: 'auto', filter: 'drop-shadow(0 8px 32px rgba(0,0,0,0.7))' }}
+            />
           </div>
           <h1 style={{
             fontFamily: 'Barlow Condensed, sans-serif',

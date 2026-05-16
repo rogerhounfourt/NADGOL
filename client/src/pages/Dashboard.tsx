@@ -78,11 +78,18 @@ export default function Dashboard() {
         opacity: 0,
         animation: 'fadeInUp 0.5s cubic-bezier(0.23, 1, 0.32, 1) 0ms forwards',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-          <div style={{ width: '3px', height: '20px', background: '#CC1A1A', borderRadius: '2px' }} />
-          <h2 style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 800, fontSize: '28px', color: '#fff', letterSpacing: '1px', textTransform: 'uppercase' }}>
-            Visão Geral da Academia
-          </h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
+          <img
+            src="/manus-storage/68db7c69-d5fd-4129-8544-30bbc90c29b1_1c2e822c.jpg"
+            alt="Nadgol Academy Shield"
+            style={{ width: '40px', height: 'auto', filter: 'drop-shadow(0 0 12px rgba(204,26,26,0.25))' }}
+          />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: '3px', height: '20px', background: '#CC1A1A', borderRadius: '2px' }} />
+            <h2 style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 800, fontSize: '28px', color: '#fff', letterSpacing: '1px', textTransform: 'uppercase' }}>
+              Visão Geral da Academia
+            </h2>
+          </div>
         </div>
         <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: 'rgba(255,255,255,0.4)', marginLeft: '11px' }}>
           Sexta-feira, 16 de Maio de 2026 · Temporada 2026

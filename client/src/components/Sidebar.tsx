@@ -88,8 +88,12 @@ export default function Sidebar() {
           borderBottom: '1px solid #1E1E1E',
           flexShrink: 0,
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden' }}>
-            <NadgolShield size={32} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden', filter: 'drop-shadow(0 0 12px rgba(204,26,26,0.25))' }}>
+            <img
+              src="/manus-storage/68db7c69-d5fd-4129-8544-30bbc90c29b1_1c2e822c.jpg"
+              alt="Nadgol Academy Shield"
+              style={{ width: '40px', height: 'auto' }}
+            />
             {showLabels && (
               <div style={{ whiteSpace: 'nowrap' }}>
                 <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 800, fontSize: '16px', color: '#fff', letterSpacing: '2px', lineHeight: 1 }}>NADGOL</p>

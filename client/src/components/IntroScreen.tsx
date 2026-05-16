@@ -75,6 +75,19 @@ export default function IntroScreen({ role, name, onComplete }: IntroScreenProps
       {/* Red accent line at bottom */}
       <div className="absolute bottom-0 left-0 right-0 h-1" style={{ background: '#CC1A1A' }} />
 
+      {/* Shield watermark in corner */}
+      <div className="absolute top-8 right-8 opacity-20" style={{
+        opacity: phase === 'text' ? 0.15 : 0,
+        transition: 'opacity 600ms ease-out',
+        transitionDelay: '600ms',
+      }}>
+        <img
+          src="/manus-storage/68db7c69-d5fd-4129-8544-30bbc90c29b1_1c2e822c.jpg"
+          alt="Nadgol Academy Shield"
+          style={{ width: '100px', height: 'auto', filter: 'drop-shadow(0 0 20px rgba(204,26,26,0.3))' }}
+        />
+      </div>
+
       {/* Content */}
       <div className="absolute inset-0 flex flex-col justify-center px-8 md:px-16 lg:px-24">
         {/* Role Badge */}
@@ -189,8 +202,12 @@ export default function IntroScreen({ role, name, onComplete }: IntroScreenProps
             transitionDelay: '500ms',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <NadgolShield size={36} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', filter: 'drop-shadow(0 4px 16px rgba(204,26,26,0.3))' }}>
+            <img
+              src="/manus-storage/68db7c69-d5fd-4129-8544-30bbc90c29b1_1c2e822c.jpg"
+              alt="Nadgol Academy Shield"
+              style={{ width: '48px', height: 'auto' }}
+            />
             <div>
               <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 800, fontSize: '18px', color: '#fff', letterSpacing: '2px', lineHeight: 1 }}>NADGOL</p>
               <p style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 400, fontSize: '11px', color: 'rgba(255,255,255,0.5)', letterSpacing: '3px' }}>ACADEMY</p>
@@ -212,12 +229,11 @@ export default function IntroScreen({ role, name, onComplete }: IntroScreenProps
 
 export function NadgolShield({ size = 40, className = '' }: { size?: number; className?: string }) {
   return (
-    <svg width={size} height={size * 1.15} viewBox="0 0 40 46" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
-      <path d="M20 2L4 8V22C4 31 11 39 20 44C29 39 36 31 36 22V8L20 2Z" fill="#CC1A1A" />
-      <path d="M20 4L6 9.5V22C6 30 12.5 37.5 20 42C27.5 37.5 34 30 34 22V9.5L20 4Z" fill="#111111" />
-      <path d="M20 7L8 12V22C8 29 13.5 36 20 40C26.5 36 32 29 32 22V12L20 7Z" fill="#1A1A1A" />
-      <text x="20" y="28" textAnchor="middle" fontFamily="Barlow Condensed, sans-serif" fontWeight="900" fontSize="13" fill="#CC1A1A" letterSpacing="1">N</text>
-      <circle cx="20" cy="20" r="8" fill="none" stroke="#CC1A1A" strokeWidth="1" opacity="0.4" />
-    </svg>
+    <img
+      src="/manus-storage/68db7c69-d5fd-4129-8544-30bbc90c29b1_1c2e822c.jpg"
+      alt="Nadgol Academy Shield"
+      style={{ width: size, height: 'auto' }}
+      className={className}
+    />
   );
 }

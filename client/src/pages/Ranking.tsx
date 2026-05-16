@@ -6,11 +6,18 @@ export default function Ranking() {
 
   return (
     <div style={{ padding: '24px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
-        <div style={{ width: '3px', height: '20px', background: '#CC1A1A', borderRadius: '2px' }} />
-        <h2 style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 800, fontSize: '24px', color: '#fff', textTransform: 'uppercase', letterSpacing: '1px' }}>
-          Ranking de Atletas
-        </h2>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+        <img
+          src="/manus-storage/68db7c69-d5fd-4129-8544-30bbc90c29b1_1c2e822c.jpg"
+          alt="Nadgol Academy Shield"
+          style={{ width: '36px', height: 'auto', filter: 'drop-shadow(0 0 10px rgba(204,26,26,0.2))' }}
+        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ width: '3px', height: '20px', background: '#CC1A1A', borderRadius: '2px' }} />
+          <h2 style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 800, fontSize: '24px', color: '#fff', textTransform: 'uppercase', letterSpacing: '1px' }}>
+            Ranking de Atletas
+          </h2>
+        </div>
       </div>
 
       {/* Top 3 podium */}
