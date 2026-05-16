@@ -25,44 +25,36 @@ export default function Login() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#080808',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       padding: '24px',
       position: 'relative',
       overflow: 'hidden',
+      backgroundImage: 'url(https://d2xsxph8kpxj0f.cloudfront.net/310519663666237756/iKNeWTuZ5pz2AxmTY4qpFt/login-hero-nadgol-4hs9e7e4oFJSQFj2Dx4Y8S.webp)',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundAttachment: 'fixed',
     }}>
-      {/* Premium background gradients */}
+      {/* Premium dark overlay with gradient */}
       <div style={{
         position: 'absolute', inset: 0,
-        backgroundImage: `radial-gradient(circle at 20% 50%, rgba(204,26,26,0.08) 0%, transparent 50%),
-                          radial-gradient(circle at 80% 20%, rgba(204,26,26,0.05) 0%, transparent 40%),
-                          radial-gradient(circle at 50% 80%, rgba(51,152,255,0.04) 0%, transparent 50%)`,
+        background: 'linear-gradient(135deg, rgba(8,8,8,0.75) 0%, rgba(8,8,8,0.65) 50%, rgba(8,8,8,0.75) 100%)',
+        backdropFilter: 'blur(2px)',
       }} />
 
-      {/* Grid pattern */}
-      <div style={{
-        position: 'absolute', inset: 0,
-        backgroundImage: `linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-                          linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)`,
-        backgroundSize: '60px 60px',
-      }} />
-
-      {/* Animated shield watermark */}
+      {/* Animated accent glow */}
       <div style={{
         position: 'absolute',
-        top: '-10%',
-        right: '-5%',
-        opacity: 0.08,
-        animation: 'float 6s ease-in-out infinite',
-      }}>
-        <img
-          src="/manus-storage/68db7c69-d5fd-4129-8544-30bbc90c29b1_1c2e822c.jpg"
-          alt="Background"
-          style={{ width: '400px', height: 'auto', filter: 'blur(1px)' }}
-        />
-      </div>
+        top: '20%',
+        right: '-10%',
+        width: '400px',
+        height: '400px',
+        borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(204,26,26,0.15) 0%, transparent 70%)',
+        filter: 'blur(40px)',
+        animation: 'pulse 4s ease-in-out infinite',
+      }} />
 
       <div style={{
         position: 'relative', zIndex: 1,
@@ -78,7 +70,7 @@ export default function Login() {
               style={{
                 width: '110px',
                 height: 'auto',
-                filter: 'drop-shadow(0 0 32px rgba(204,26,26,0.4)) drop-shadow(0 8px 24px rgba(0,0,0,0.8))',
+                filter: 'drop-shadow(0 0 32px rgba(204,26,26,0.5)) drop-shadow(0 8px 24px rgba(0,0,0,0.9))',
                 animation: 'fadeInDown 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards',
               }}
             />
@@ -90,24 +82,28 @@ export default function Login() {
             textTransform: 'uppercase', lineHeight: 1, marginBottom: '8px',
             animation: 'fadeInUp 0.6s cubic-bezier(0.23, 1, 0.32, 1) 100ms forwards',
             opacity: 0,
+            textShadow: '0 4px 16px rgba(0,0,0,0.8)',
           }}>NADGOL</h1>
           <p style={{
             fontFamily: 'DM Sans, sans-serif',
-            fontSize: '12px', color: 'rgba(255,255,255,0.4)',
+            fontSize: '12px', color: 'rgba(255,255,255,0.5)',
             letterSpacing: '5px', textTransform: 'uppercase', marginBottom: '16px',
             animation: 'fadeInUp 0.6s cubic-bezier(0.23, 1, 0.32, 1) 150ms forwards',
             opacity: 0,
+            textShadow: '0 2px 8px rgba(0,0,0,0.7)',
           }}>ACADEMY</p>
           <div style={{
             width: '48px', height: '2px', background: '#CC1A1A', margin: '0 auto 16px',
             animation: 'scaleIn 0.6s cubic-bezier(0.23, 1, 0.32, 1) 200ms forwards',
             opacity: 0,
+            boxShadow: '0 0 16px rgba(204,26,26,0.6)',
           }} />
           <p style={{
-            fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: 'rgba(255,255,255,0.5)',
+            fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: 'rgba(255,255,255,0.6)',
             letterSpacing: '1px',
             animation: 'fadeInUp 0.6s cubic-bezier(0.23, 1, 0.32, 1) 250ms forwards',
             opacity: 0,
+            textShadow: '0 2px 8px rgba(0,0,0,0.7)',
           }}>
             Selecione seu perfil de acesso
           </p>
@@ -128,8 +124,9 @@ export default function Login() {
                 onMouseLeave={() => setHoveredRole(null)}
                 style={{
                   padding: '20px',
-                  background: isSelected ? '#CC1A1A' : '#111111',
-                  border: `2px solid ${isSelected ? '#CC1A1A' : isHovered ? '#2A2A2A' : '#1E1E1E'}`,
+                  background: isSelected ? '#CC1A1A' : 'rgba(17,17,17,0.85)',
+                  backdropFilter: 'blur(10px)',
+                  border: `2px solid ${isSelected ? '#CC1A1A' : isHovered ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.1)'}`,
                   borderRadius: '10px',
                   cursor: 'pointer',
                   transition: 'all 200ms cubic-bezier(0.23, 1, 0.32, 1)',
@@ -139,7 +136,7 @@ export default function Login() {
                   opacity: 0,
                   animation: `fadeInUp 0.5s cubic-bezier(0.23, 1, 0.32, 1) ${300 + idx * 50}ms forwards`,
                   transform: isHovered && !isSelected ? 'translateY(-2px)' : 'translateY(0)',
-                  boxShadow: isSelected ? `0 0 24px ${option.color}40` : isHovered ? '0 8px 24px rgba(0,0,0,0.3)' : 'none',
+                  boxShadow: isSelected ? `0 0 24px ${option.color}60, inset 0 0 20px rgba(255,255,255,0.1)` : isHovered ? '0 8px 24px rgba(0,0,0,0.5)' : 'none',
                 }}
               >
                 <div style={{
@@ -152,6 +149,7 @@ export default function Login() {
                   alignItems: 'center',
                   justifyContent: 'center',
                   flexShrink: 0,
+                  backdropFilter: 'blur(10px)',
                 }}>
                   <Icon size={24} color={isSelected ? '#fff' : option.color} strokeWidth={1.5} />
                 </div>
@@ -164,6 +162,7 @@ export default function Login() {
                     letterSpacing: '0.5px',
                     textTransform: 'uppercase',
                     marginBottom: '2px',
+                    textShadow: '0 2px 4px rgba(0,0,0,0.5)',
                   }}>
                     {option.label}
                   </p>
@@ -171,6 +170,7 @@ export default function Login() {
                     fontFamily: 'DM Sans, sans-serif',
                     fontSize: '12px',
                     color: isSelected ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.5)',
+                    textShadow: '0 1px 3px rgba(0,0,0,0.5)',
                   }}>
                     {option.desc}
                   </p>
@@ -206,9 +206,9 @@ export default function Login() {
           style={{
             width: '100%',
             padding: '14px',
-            background: selectedRole ? '#CC1A1A' : '#1A1A1A',
+            background: selectedRole ? '#CC1A1A' : 'rgba(26,26,26,0.7)',
             color: selectedRole ? '#fff' : 'rgba(255,255,255,0.3)',
-            border: `1px solid ${selectedRole ? '#CC1A1A' : '#2A2A2A'}`,
+            border: `1px solid ${selectedRole ? '#CC1A1A' : 'rgba(255,255,255,0.1)'}`,
             borderRadius: '8px',
             fontFamily: 'Barlow Condensed, sans-serif',
             fontSize: '14px',
@@ -219,17 +219,19 @@ export default function Login() {
             transition: 'all 200ms cubic-bezier(0.23, 1, 0.32, 1)',
             opacity: 0,
             animation: 'fadeInUp 0.5s cubic-bezier(0.23, 1, 0.32, 1) 550ms forwards',
-            boxShadow: selectedRole ? '0 0 24px rgba(204,26,26,0.3)' : 'none',
+            boxShadow: selectedRole ? '0 0 24px rgba(204,26,26,0.4), inset 0 0 20px rgba(255,255,255,0.1)' : 'none',
+            backdropFilter: 'blur(10px)',
+            textShadow: '0 2px 4px rgba(0,0,0,0.5)',
           }}
           onMouseEnter={(e) => {
             if (selectedRole) {
-              e.currentTarget.style.boxShadow = '0 0 32px rgba(204,26,26,0.5)';
+              e.currentTarget.style.boxShadow = '0 0 32px rgba(204,26,26,0.6), inset 0 0 20px rgba(255,255,255,0.15)';
               e.currentTarget.style.transform = 'translateY(-2px)';
             }
           }}
           onMouseLeave={(e) => {
             if (selectedRole) {
-              e.currentTarget.style.boxShadow = '0 0 24px rgba(204,26,26,0.3)';
+              e.currentTarget.style.boxShadow = '0 0 24px rgba(204,26,26,0.4), inset 0 0 20px rgba(255,255,255,0.1)';
               e.currentTarget.style.transform = 'translateY(0)';
             }
           }}
@@ -241,12 +243,13 @@ export default function Login() {
         <p style={{
           fontFamily: 'DM Sans, sans-serif',
           fontSize: '11px',
-          color: 'rgba(255,255,255,0.3)',
+          color: 'rgba(255,255,255,0.4)',
           textAlign: 'center',
           marginTop: '24px',
           letterSpacing: '1px',
           animation: 'fadeIn 0.6s cubic-bezier(0.23, 1, 0.32, 1) 600ms forwards',
           opacity: 0,
+          textShadow: '0 1px 3px rgba(0,0,0,0.7)',
         }}>
           © 2026 Nadgol Academy · Todos os direitos reservados
         </p>
