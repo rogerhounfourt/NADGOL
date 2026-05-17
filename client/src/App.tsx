@@ -20,6 +20,7 @@ import Ranking from "./pages/Ranking";
 import Notifications from "./pages/Notifications";
 import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
+import NadScore from "./pages/NadScore";
 import { useEffect, useState } from "react";
 
 const PAGE_MAP: Record<string, React.ComponentType> = {
@@ -32,6 +33,7 @@ const PAGE_MAP: Record<string, React.ComponentType> = {
   financial: Financial,
   evolution: Evolution,
   ranking: Ranking,
+  nadscore: NadScore,
   notifications: Notifications,
   chat: Chat,
   settings: Settings,

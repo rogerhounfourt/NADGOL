@@ -4,7 +4,7 @@ import { NadgolShield } from './IntroScreen';
 import {
   LayoutDashboard, Users, UserCheck, ClipboardList, Activity,
   Trophy, DollarSign, TrendingUp, Medal, Bell, MessageSquare,
-  Settings, ChevronLeft, ChevronRight, LogOut
+  Settings, ChevronLeft, ChevronRight, LogOut, Zap
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { id: 'athletes', label: 'Atletas', icon: UserCheck },
   { id: 'attendance', label: 'Presença', icon: ClipboardList },
   { id: 'performance', label: 'Performance', icon: Activity },
+  { id: 'nadscore', label: 'NadScore', icon: Zap },
   { id: 'competitions', label: 'Competições', icon: Trophy },
   { id: 'financial', label: 'Financeiro', icon: DollarSign },
   { id: 'evolution', label: 'Evolução', icon: TrendingUp },
@@ -23,10 +24,10 @@ const NAV_ITEMS = [
 ];
 
 const ROLE_PERMISSIONS: Record<string, string[]> = {
-  admin: ['dashboard', 'classes', 'athletes', 'attendance', 'performance', 'competitions', 'financial', 'evolution', 'ranking', 'notifications', 'chat', 'settings'],
-  coach: ['dashboard', 'classes', 'athletes', 'attendance', 'performance', 'competitions', 'evolution', 'ranking', 'notifications', 'chat'],
-  parent: ['dashboard', 'attendance', 'financial', 'evolution', 'notifications', 'chat'],
-  athlete: ['dashboard', 'performance', 'evolution', 'ranking', 'notifications', 'chat'],
+  admin: ['dashboard', 'classes', 'athletes', 'attendance', 'performance', 'nadscore', 'competitions', 'financial', 'evolution', 'ranking', 'notifications', 'chat', 'settings'],
+  coach: ['dashboard', 'classes', 'athletes', 'attendance', 'performance', 'nadscore', 'competitions', 'evolution', 'ranking', 'notifications', 'chat'],
+  parent: ['dashboard', 'attendance', 'financial', 'evolution', 'nadscore', 'notifications', 'chat'],
+  athlete: ['dashboard', 'performance', 'nadscore', 'evolution', 'ranking', 'notifications', 'chat'],
 };
 
 export default function Sidebar() {
