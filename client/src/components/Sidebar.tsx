@@ -4,7 +4,7 @@ import { NadgolShield } from './IntroScreen';
 import {
   LayoutDashboard, Users, UserCheck, ClipboardList, Activity,
   Trophy, DollarSign, TrendingUp, Medal, Bell, MessageSquare,
-  Settings, ChevronLeft, ChevronRight, LogOut, Zap, BookOpen, Eye, Brain, Heart, Radar, Clipboard
+  Settings, ChevronLeft, ChevronRight, LogOut, Zap, BookOpen, Eye, Brain, Heart, Radar, Clipboard, Lightbulb
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -20,6 +20,9 @@ const NAV_ITEMS = [
   { id: 'mentality', label: 'Mentalidade', icon: Heart },
   { id: 'radar', label: 'Radar', icon: Radar },
   { id: 'tactical', label: 'Tactical Board', icon: Clipboard },
+  { id: 'daily', label: 'Performance Diária', icon: Activity },
+  { id: 'mindgame', label: 'Mind Game', icon: Lightbulb },
+  { id: 'profile', label: 'Meu Perfil', icon: Users },
   { id: 'competitions', label: 'Competições', icon: Trophy },
   { id: 'financial', label: 'Financeiro', icon: DollarSign },
   { id: 'evolution', label: 'Evolução', icon: TrendingUp },
@@ -33,7 +36,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
   admin: ['dashboard', 'classes', 'athletes', 'attendance', 'performance', 'nadscore', 'journey', 'scout', 'intelligence', 'mentality', 'radar', 'competitions', 'financial', 'evolution', 'ranking', 'notifications', 'chat', 'settings'],
   coach: ['dashboard', 'classes', 'athletes', 'attendance', 'performance', 'nadscore', 'journey', 'scout', 'intelligence', 'mentality', 'radar', 'tactical', 'competitions', 'evolution', 'ranking', 'notifications', 'chat'],
   parent: ['dashboard', 'attendance', 'financial', 'evolution', 'nadscore', 'journey', 'mentality', 'notifications', 'chat'],
-  athlete: ['dashboard', 'performance', 'nadscore', 'journey', 'scout', 'intelligence', 'mentality', 'radar', 'evolution', 'ranking', 'notifications', 'chat'],
+  athlete: ['dashboard', 'performance', 'nadscore', 'journey', 'scout', 'intelligence', 'mentality', 'radar', 'daily', 'mindgame', 'profile', 'evolution', 'ranking', 'notifications', 'chat'],
 };
 
 export default function Sidebar() {

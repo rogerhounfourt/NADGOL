@@ -27,6 +27,9 @@ import NadgolIntelligence from "./pages/NadgolIntelligence";
 import MentalityDiscipline from "./pages/MentalityDiscipline";
 import TalentRadar from "./pages/TalentRadar";
 import TacticalBoard from "./pages/TacticalBoard";
+import DailyPerformance from "./pages/DailyPerformance";
+import MindGame from "./pages/MindGame";
+import AthleteProfile from "./pages/AthleteProfile";
 import { useEffect, useState } from "react";
 
 const PAGE_MAP: Record<string, React.ComponentType> = {
@@ -46,6 +49,9 @@ const PAGE_MAP: Record<string, React.ComponentType> = {
   mentality: MentalityDiscipline,
   radar: TalentRadar,
   tactical: TacticalBoard,
+  daily: DailyPerformance,
+  mindgame: MindGame,
+  profile: AthleteProfile,
   notifications: Notifications,
   chat: Chat,
   settings: Settings,
