@@ -26,6 +26,7 @@ import NadgolScout from "./pages/NadgolScout";
 import NadgolIntelligence from "./pages/NadgolIntelligence";
 import MentalityDiscipline from "./pages/MentalityDiscipline";
 import TalentRadar from "./pages/TalentRadar";
+import TacticalBoard from "./pages/TacticalBoard";
 import { useEffect, useState } from "react";
 
 const PAGE_MAP: Record<string, React.ComponentType> = {
@@ -44,6 +45,7 @@ const PAGE_MAP: Record<string, React.ComponentType> = {
   intelligence: NadgolIntelligence,
   mentality: MentalityDiscipline,
   radar: TalentRadar,
+  tactical: TacticalBoard,
   notifications: Notifications,
   chat: Chat,
   settings: Settings,
