@@ -21,6 +21,11 @@ import Notifications from "./pages/Notifications";
 import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
 import NadScore from "./pages/NadScore";
+import AthleteJourney from "./pages/AthleteJourney";
+import NadgolScout from "./pages/NadgolScout";
+import NadgolIntelligence from "./pages/NadgolIntelligence";
+import MentalityDiscipline from "./pages/MentalityDiscipline";
+import TalentRadar from "./pages/TalentRadar";
 import { useEffect, useState } from "react";
 
 const PAGE_MAP: Record<string, React.ComponentType> = {
@@ -34,6 +39,11 @@ const PAGE_MAP: Record<string, React.ComponentType> = {
   evolution: Evolution,
   ranking: Ranking,
   nadscore: NadScore,
+  journey: AthleteJourney,
+  scout: NadgolScout,
+  intelligence: NadgolIntelligence,
+  mentality: MentalityDiscipline,
+  radar: TalentRadar,
   notifications: Notifications,
   chat: Chat,
   settings: Settings,

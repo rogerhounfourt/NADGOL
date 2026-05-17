@@ -4,7 +4,7 @@ import { NadgolShield } from './IntroScreen';
 import {
   LayoutDashboard, Users, UserCheck, ClipboardList, Activity,
   Trophy, DollarSign, TrendingUp, Medal, Bell, MessageSquare,
-  Settings, ChevronLeft, ChevronRight, LogOut, Zap
+  Settings, ChevronLeft, ChevronRight, LogOut, Zap, BookOpen, Eye, Brain, Heart, Radar
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -14,6 +14,11 @@ const NAV_ITEMS = [
   { id: 'attendance', label: 'Presença', icon: ClipboardList },
   { id: 'performance', label: 'Performance', icon: Activity },
   { id: 'nadscore', label: 'NadScore', icon: Zap },
+  { id: 'journey', label: 'Jornada', icon: BookOpen },
+  { id: 'scout', label: 'Scout', icon: Eye },
+  { id: 'intelligence', label: 'Intelligence', icon: Brain },
+  { id: 'mentality', label: 'Mentalidade', icon: Heart },
+  { id: 'radar', label: 'Radar', icon: Radar },
   { id: 'competitions', label: 'Competições', icon: Trophy },
   { id: 'financial', label: 'Financeiro', icon: DollarSign },
   { id: 'evolution', label: 'Evolução', icon: TrendingUp },
@@ -24,10 +29,10 @@ const NAV_ITEMS = [
 ];
 
 const ROLE_PERMISSIONS: Record<string, string[]> = {
-  admin: ['dashboard', 'classes', 'athletes', 'attendance', 'performance', 'nadscore', 'competitions', 'financial', 'evolution', 'ranking', 'notifications', 'chat', 'settings'],
-  coach: ['dashboard', 'classes', 'athletes', 'attendance', 'performance', 'nadscore', 'competitions', 'evolution', 'ranking', 'notifications', 'chat'],
-  parent: ['dashboard', 'attendance', 'financial', 'evolution', 'nadscore', 'notifications', 'chat'],
-  athlete: ['dashboard', 'performance', 'nadscore', 'evolution', 'ranking', 'notifications', 'chat'],
+  admin: ['dashboard', 'classes', 'athletes', 'attendance', 'performance', 'nadscore', 'journey', 'scout', 'intelligence', 'mentality', 'radar', 'competitions', 'financial', 'evolution', 'ranking', 'notifications', 'chat', 'settings'],
+  coach: ['dashboard', 'classes', 'athletes', 'attendance', 'performance', 'nadscore', 'journey', 'scout', 'intelligence', 'mentality', 'radar', 'competitions', 'evolution', 'ranking', 'notifications', 'chat'],
+  parent: ['dashboard', 'attendance', 'financial', 'evolution', 'nadscore', 'journey', 'mentality', 'notifications', 'chat'],
+  athlete: ['dashboard', 'performance', 'nadscore', 'journey', 'scout', 'intelligence', 'mentality', 'radar', 'evolution', 'ranking', 'notifications', 'chat'],
 };
 
 export default function Sidebar() {
