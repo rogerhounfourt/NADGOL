@@ -1,35 +1,17 @@
 {
   "build_command": "pnpm run build",
-  "capabilities": [],
+  "capabilities": [
+    "db",
+    "server",
+    "user"
+  ],
   "dev_command": "pnpm run dev",
   "env_vars": {},
   "experiments": null,
-  "git_remote": {
-    "repo_url": "s3://vida-prod-gitrepo/webdev-git/310519663666237756/iKNeWTuZ5pz2AxmTY4qpFt",
-    "access_key_id": "ASIAZV3A2ECZMXZZ57S5",
-    "secret_access_key": "7E7R1f9vpJ/RVSzaNFCChHsipK4sX+G507D1qw9l",
-    "session_token": "IQoJb3JpZ2luX2VjEMf//////////wEaCXVzLWVhc3QtMSJHMEUCIQCHq/p//B8WWmaEeeAcBtrtR0FZm1d/w5KWgOsZJiRsegIgDmBhv84cbjRZ1s8i40pgj9rq0ZKt+EvKONA464XB9+Eq/wMIkP//////////ARAEGgw2NjUzODYwOTg4NjYiDHaDA0pQDOU5TaKBGCrTA8DOSgIWX01MA3T4IqC3RMob7Vp2QgArwb5TA5xCFlQY+TlKcwwof5SEEkt+KFkYV3u1KJ6ZMAJFSonhC2JzDqqKl77yt9o2P6diBNIzKXh9qHg7MMCArpJlrePdO08h+iSAWa0XmRvsI7OS1z6Sz8D6dJjYJxh0zL3c1BDro19kdR4jzj0o8vHkZS64L/ikTdXVWW16L17wo6N3XVWNynnaARuTCRVD42Y8tsDYwoTRh9XZJKuAB+xPx/x44iDQNE0sXLPPf/0h+WViYVKUb71KwljA52ej1B6xxfTsRXwsDktWmX/NWU7v3AEfpR4SIdPdlCyeQMTYNFGkFOKd4sPlFJylg9hBzZCslPILeSX8jehXda3IXeiBYCuh7mYMhdfRFCQzZOU7g474z+jclrcEUlrSjp49GFhNB/TQQg+AWn7booy5T3/qYrcXNQrg59iz+dzPS8eSSTc5s7QZLTegH6hKMW6ubvTW5S9erk0sTXilM8RnzMoyoIj9tEiwUT8jQHUJinlGxFbj+Bcu3826B3TCXJtHwNsnGKL/nYO/1LmspZqko7Z+SQB+U27yYf6ZnX4s3GFvap9K8gUNvCig5nPiPqlA1sAK65M5cUzQ5bnXMPiJotAGOp0B4c7DOvFti8UPn5PbUh1RqhCMs37mVTcns+NkXQfYVcsTbFyVHNuZEamfLHm1ZVO1JaMtGQkj2AEQTq5tRqzty7gjMkt0LRap9mob72Bb0khnlUtRR45TzsE7cb+gzzfDvA1U76k7mDtBt8TR6O4ml1nfnT+BBtXiWIEphYwEwxqA3cfe3VStIAmhJbXLfQkj9xTPD8zTl0bGcEs3AA==",
-    "expiration": "2026-05-17T02:53:44.000Z"
-  },
   "name": "nadgol-academy",
   "path": "/home/ubuntu/nadgol-academy",
   "port": 3000,
-  "secrets": {
-    "BUILT_IN_FORGE_API_KEY": "ZoJP4HUtW4zLh8CrVCGPtN",
-    "BUILT_IN_FORGE_API_URL": "https://forge.manus.ai",
-    "JWT_SECRET": "BXjFJ3LL6uvMRDvFXkGRJq",
-    "OAUTH_SERVER_URL": "https://api.manus.im",
-    "OWNER_NAME": "Nadgol Academy",
-    "OWNER_OPEN_ID": "ktZkisjPveQ6yWyfcyYKw6",
-    "VITE_ANALYTICS_ENDPOINT": "https://manus-analytics.com",
-    "VITE_ANALYTICS_WEBSITE_ID": "d0f73755-e0bb-44f7-a673-30e4700543cd",
-    "VITE_APP_ID": "iKNeWTuZ5pz2AxmTY4qpFt",
-    "VITE_APP_LOGO": "",
-    "VITE_APP_TITLE": "Nadgol Academy",
-    "VITE_FRONTEND_FORGE_API_KEY": "VsXBzxcQS7tBUomvqvHqxQ",
-    "VITE_FRONTEND_FORGE_API_URL": "https://forge.manus.ai",
-    "VITE_OAUTH_PORTAL_URL": "https://manus.im"
-  },
+  "secrets": {},
   "template_id": "web-static",
   "test_command": "pnpm test"
 }
