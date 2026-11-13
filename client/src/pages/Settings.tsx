@@ -29,7 +29,7 @@ export default function Settings() {
     <div style={{ padding: '24px', maxWidth: '720px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
         <img
-          src="/manus-storage/68db7c69-d5fd-4129-8544-30bbc90c29b1_1c2e822c.jpg"
+          src="/escudo-nadgol.svg"
           alt="Nadgol Academy Shield"
           style={{ width: '36px', height: 'auto', filter: 'drop-shadow(0 0 10px rgba(204,26,26,0.2))' }}
         />

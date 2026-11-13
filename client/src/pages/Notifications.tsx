@@ -1,5 +1,8 @@
 import { useState } from 'react';
-import { NOTIFICATIONS } from '@/lib/data';
+import { useApp } from '@/contexts/AppContext';
+import FormModal from '@/components/FormModal';
+import { Loading, Empty, ErrorState } from '@/components/PageState';
+import { useNotifications, useMarkNotificationRead, useCreateNotification } from '@/lib/queries';
 import { Bell, Dumbbell, Trophy, DollarSign, Megaphone, ClipboardCheck, Calendar, Plus } from 'lucide-react';
 
 const TYPE_CONFIG = {
@@ -12,11 +15,14 @@ const TYPE_CONFIG = {
 };
 
 export default function Notifications() {
-  const [notifs, setNotifs] = useState(NOTIFICATIONS);
-
-  const markRead = (id: string) => {
-    setNotifs(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-  };
+  const { currentUser, demo } = useApp();
+  const q = useNotifications();
+  const mark = useMarkNotificationRead();
+  const create = useCreateNotification();
+  const [modal, setModal] = useState(false);
+  const notifs = q.data ?? [];
+  const podeCriar = demo || currentUser?.role === 'admin' || currentUser?.role === 'coach';
+  const markRead = (id: string) => { const n = notifs.find(x => x.id === id); if (n && !n.read) mark.mutate(id); };
 
   return (
     <div style={{ padding: '24px' }}>
@@ -24,7 +30,7 @@ export default function Notifications() {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
             <img
-              src="/manus-storage/68db7c69-d5fd-4129-8544-30bbc90c29b1_1c2e822c.jpg"
+              src="/escudo-nadgol.svg"
               alt="Nadgol Academy Shield"
               style={{ width: '36px', height: 'auto', filter: 'drop-shadow(0 0 10px rgba(204,26,26,0.2))' }}
             />
@@ -39,11 +45,14 @@ export default function Notifications() {
             {notifs.filter(n => !n.read).length} não lidas
           </p>
         </div>
-        <button className="nadgol-btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '6px', fontSize: '13px' }}>
-          <Plus size={16} /> Nova Notificação
-        </button>
+        {podeCriar && (
+          <button onClick={() => setModal(true)} className="nadgol-btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '6px', fontSize: '13px' }}>
+            <Plus size={16} /> Nova Notificação
+          </button>
+        )}
       </div>
 
+      {q.isLoading ? <Loading /> : q.isError ? <ErrorState onRetry={() => q.refetch()} /> : notifs.length === 0 ? <Empty title="Nenhuma notificação" hint="Os avisos da escolinha aparecem aqui." /> : (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {notifs.map((notif, i) => {
           const tc = TYPE_CONFIG[notif.type];
@@ -89,6 +98,24 @@ export default function Notifications() {
           );
         })}
       </div>
+      )}
+
+      {modal && (
+        <FormModal
+          title="Nova notificação" submitLabel="Enviar" saving={create.isPending}
+          fields={[
+            { name: 'titulo', label: 'Título', required: true, placeholder: 'Ex.: Treino cancelado amanhã' },
+            { name: 'mensagem', label: 'Mensagem', required: true },
+            { name: 'tipo', label: 'Tipo', type: 'select', half: true, options: [
+              { value: 'aviso', label: 'Comunicado' }, { value: 'treino', label: 'Treino' }, { value: 'jogo', label: 'Jogo' },
+              { value: 'pagamento', label: 'Pagamento' }, { value: 'avaliacao', label: 'Avaliação' }, { value: 'evento', label: 'Evento' } ] },
+            { name: 'destino', label: 'Para quem', type: 'select', half: true, options: [
+              { value: 'todos', label: 'Todos' }, { value: 'responsaveis', label: 'Responsáveis' }, { value: 'atletas', label: 'Atletas' }, { value: 'equipe', label: 'Só a equipe' } ] },
+          ]}
+          onSubmit={v => create.mutate({ titulo: v.titulo, mensagem: v.mensagem, tipo: v.tipo || 'aviso', destino: v.destino || 'todos' }, { onSuccess: () => setModal(false) })}
+          onClose={() => setModal(false)}
+        />
+      )}
     </div>
   );
 }

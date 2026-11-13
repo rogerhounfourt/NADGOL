@@ -1,12 +1,37 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useApp } from '@/contexts/AppContext';
+import { useAthletes, useDailyLogs, useSaveDaily } from '@/lib/queries';
 import { Plus, TrendingUp, Droplet, Moon, Smartphone, Apple } from 'lucide-react';
 
+const hojeLocal = () => new Date().toLocaleDateString('en-CA');
+const REFEICOES = ['Café da manhã', 'Lanche da manhã', 'Almoço', 'Lanche da tarde', 'Jantar'];
+
 export default function DailyPerformance() {
+  const { currentUser, demo } = useApp();
+  const atl = useAthletes();
+  const lista = (atl.data ?? []).filter(a => a.status === 'active');
+  const [atletaId, setAtletaId] = useState('');
+  useEffect(() => {
+    if (atletaId || lista.length === 0) return;
+    setAtletaId(lista.find(a => a.id === currentUser?.atletaId)?.id ?? lista[0].id);
+  }, [lista, atletaId, currentUser?.atletaId]);
+  const logs = useDailyLogs(atletaId);
+  const salvar = useSaveDaily();
   const [sleepHours, setSleepHours] = useState(8);
   const [sleepQuality, setSleepQuality] = useState('elite');
   const [hydration, setHydration] = useState(2.5);
   const [screenTime, setScreenTime] = useState(4.2);
-  const [meals, setMeals] = useState(['Café da manhã', 'Almoço']);
+  const [meals, setMeals] = useState<string[]>(['Café da manhã', 'Almoço']);
+  const hoje = (logs.data ?? []).find(l => l.data === hojeLocal());
+  useEffect(() => {
+    if (!hoje) return;
+    if (hoje.sono !== null) setSleepHours(hoje.sono);
+    if (hoje.agua !== null) setHydration(hoje.agua);
+    if (hoje.tela !== null) setScreenTime(hoje.tela);
+    if (hoje.refeicoes) setMeals(REFEICOES.slice(0, hoje.refeicoes));
+  }, [hoje?.data, hoje?.sono, hoje?.agua, hoje?.tela, hoje?.refeicoes]);
+  const semana = Array.from({ length: 7 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() - (6 - i)); return d; });
+  const diaSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
 
   const getSleepStatus = (hours: number) => {
     if (hours >= 8) return { label: '🏅 Sono Elite', color: '#CC1A1A' };
@@ -30,6 +55,21 @@ export default function DailyPerformance() {
         <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
           Monitore sua rotina e evolua como atleta profissional
         </p>
+      </div>
+
+      <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '20px' }}>
+        {lista.length > 1 && (
+          <select value={atletaId} onChange={e => setAtletaId(e.target.value)} style={{ padding: '8px 12px', background: '#111', border: '1px solid #2A2A2A', borderRadius: '6px', color: '#fff', fontFamily: 'DM Sans, sans-serif', fontSize: '12px' }}>
+            {lista.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+          </select>
+        )}
+        <button
+          disabled={salvar.isPending || (!demo && !atletaId)}
+          onClick={() => salvar.mutate({ atletaId, sono: sleepHours, agua: hydration, tela: screenTime, refeicoes: meals.length })}
+          className="nadgol-btn-primary" style={{ padding: '10px 18px', borderRadius: '6px', fontSize: '13px', border: 'none', cursor: 'pointer', opacity: salvar.isPending ? 0.6 : 1 }}
+        >
+          {salvar.isPending ? 'Salvando...' : 'Salvar o dia de hoje'}
+        </button>
       </div>
 
       {/* Main Grid */}
@@ -168,10 +208,10 @@ export default function DailyPerformance() {
           </div>
           <div style={{ padding: '12px', background: 'rgba(255,165,0,0.1)', borderRadius: '6px', marginBottom: '12px' }}>
             <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '11px', color: 'rgba(255,255,255,0.7)', margin: 0 }}>
-              📱 Redes Sociais: 2.5h
+              📱 Tempo de tela de hoje: {screenTime.toFixed(1)}h
             </p>
             <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '11px', color: 'rgba(255,255,255,0.7)', margin: '4px 0 0 0' }}>
-              💡 Modo Foco: Ativado
+              💡 Limite recomendado: até 5h por dia
             </p>
           </div>
           <button style={{
@@ -216,10 +256,10 @@ export default function DailyPerformance() {
           </div>
           <div style={{ marginBottom: '16px' }}>
             <div style={{ fontSize: '24px', fontWeight: 800, color: '#22C55E', marginBottom: '8px' }}>
-              2.450 cal
+              {meals.length} {meals.length === 1 ? 'refeição' : 'refeições'}
             </div>
             <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: '#22C55E', margin: 0 }}>
-              ✓ Meta atingida
+              {meals.length >= 4 ? '✓ Rotina completa' : '⚡ Complete mais refeições'}
             </p>
           </div>
           <div style={{ marginBottom: '12px' }}>
@@ -237,11 +277,10 @@ export default function DailyPerformance() {
                 alignItems: 'center',
               }}>
                 <span>✓ {meal}</span>
-                <span style={{ color: 'rgba(255,255,255,0.5)' }}>550 cal</span>
               </div>
             ))}
           </div>
-          <button style={{
+          <button onClick={() => setMeals(m => m.length < REFEICOES.length ? [...m, REFEICOES[m.length]] : m)} style={{
             width: '100%',
             padding: '8px 12px',
             background: 'rgba(34,197,94,0.1)',
@@ -284,8 +323,11 @@ export default function DailyPerformance() {
           📊 EVOLUÇÃO SEMANAL
         </h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px' }}>
-          {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab', 'Dom'].map((day, idx) => (
-            <div key={day} style={{
+          {semana.map((d) => {
+            const day = diaSemana[d.getDay()];
+            const horas = (logs.data ?? []).find(l => l.data === d.toLocaleDateString('en-CA'))?.sono ?? 0;
+            return (
+            <div key={d.toISOString()} style={{
               background: 'rgba(204,26,26,0.1)',
               border: '1px solid rgba(204,26,26,0.2)',
               borderRadius: '8px',
@@ -304,16 +346,17 @@ export default function DailyPerformance() {
                 overflow: 'hidden',
               }}>
                 <div style={{
-                  height: `${60 + idx * 10}%`,
+                  height: `${Math.min(100, (horas / 10) * 100)}%`,
                   background: 'linear-gradient(180deg, #CC1A1A, #991414)',
                   borderRadius: '4px',
                 }} />
               </div>
               <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', color: '#CC1A1A', margin: 0, fontWeight: 600 }}>
-                {(7 + idx * 0.2).toFixed(1)}h
+                {horas ? `${horas}h` : '–'}
               </p>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -323,10 +366,15 @@ export default function DailyPerformance() {
           💡 INTELIGÊNCIA ESPORTIVA
         </h4>
         <ul style={{ margin: 0, paddingLeft: '20px', fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.8)' }}>
-          <li style={{ marginBottom: '8px' }}>✓ Seu sono melhorou 15% esta semana</li>
-          <li style={{ marginBottom: '8px' }}>✓ Sua rotina está mais profissional</li>
-          <li style={{ marginBottom: '8px' }}>✓ Você reduziu tempo em redes sociais em 2h</li>
-          <li>✓ Seu desempenho cresce quando dorme melhor</li>
+          {(() => {
+            const dias = (logs.data ?? []).filter(l => l.sono !== null);
+            const media = dias.length ? dias.reduce((t, l) => t + (l.sono ?? 0), 0) / dias.length : null;
+            if (media === null) return <li>Salve o seu dia para ver dicas com base na sua rotina.</li>;
+            return (<>
+              <li style={{ marginBottom: '8px' }}>Média de sono nos últimos registros: {media.toFixed(1)}h {media >= 8 ? '✓' : '(meta: 8h)'}</li>
+              <li>{dias.length} {dias.length === 1 ? 'dia registrado' : 'dias registrados'} nas últimas duas semanas</li>
+            </>);
+          })()}
         </ul>
       </div>
     </div>

@@ -1,10 +1,32 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useApp } from '@/contexts/AppContext';
+import { useAthletes, useAthleteXp } from '@/lib/queries';
 import { Zap, Droplet, Moon, Brain, Heart, TrendingUp } from 'lucide-react';
 
 export default function AthleteProfile() {
-  const [xp, setXp] = useState(2450);
-  const [coins, setCoins] = useState(1250);
-  const [level, setLevel] = useState(Math.floor(xp / 500) + 1);
+  const { currentUser, demo } = useApp();
+  const atl = useAthletes();
+  const lista = (atl.data ?? []).filter(a => a.status === 'active');
+  const [atletaId, setAtletaId] = useState('');
+  useEffect(() => {
+    if (atletaId || lista.length === 0) return;
+    setAtletaId(lista.find(a => a.id === currentUser?.atletaId)?.id ?? lista[0].id);
+  }, [lista, atletaId, currentUser?.atletaId]);
+  const xpQ = useAthleteXp(atletaId);
+  const xp = demo ? 2450 : xpQ.data?.xp ?? 0;
+  const coins = demo ? 1250 : xpQ.data?.coins ?? 0;
+  const level = Math.floor(xp / 500) + 1;
+  const conquistas = demo
+    ? [
+        { emoji: '🔥', name: 'Disciplina Elite' }, { emoji: '💧', name: 'Hidratação Máxima' }, { emoji: '😴', name: 'Sono Perfeito' },
+        { emoji: '⚡', name: 'Atleta Consistente' }, { emoji: '🏆', name: 'Líder da Semana' }, { emoji: '🎯', name: 'Foco Total' },
+      ]
+    : (xpQ.data?.conquistas ?? []).map(c => ({ emoji: c.icone, name: c.nome }));
+  const ROTULO: Record<string, string> = { mindgame: 'Desafios Mind Game', treino: 'Treinos Completos', partida: 'Partidas Disputadas', rotina: 'Rotina Profissional', disciplina: 'Disciplina Diária' };
+  const ganhos = demo
+    ? [{ activity: 'Treinos Completos', xp: 800 }, { activity: 'Partidas Disputadas', xp: 600 }, { activity: 'Desafios Mind Game', xp: 400 }, { activity: 'Rotina Profissional', xp: 300 }, { activity: 'Disciplina Diária', xp: 350 }]
+    : (xpQ.data?.porOrigem ?? []).map(o => ({ activity: ROTULO[o.origem] ?? o.origem, xp: o.xp }));
+  const atleta = lista.find(a => a.id === atletaId);
   const [skinTone, setSkinTone] = useState('medium');
   const [hair, setHair] = useState('black');
 
@@ -32,8 +54,13 @@ export default function AthleteProfile() {
           MEU PERFIL
         </h1>
         <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
-          Sua jornada de evolução como atleta profissional
+          Sua jornada de evolução como atleta profissional{atleta ? ` · ${atleta.name}` : ''}
         </p>
+        {!demo && lista.length > 1 && (
+          <select value={atletaId} onChange={e => setAtletaId(e.target.value)} style={{ marginTop: '12px', padding: '8px 12px', background: '#111', border: '1px solid #2A2A2A', borderRadius: '6px', color: '#fff', fontSize: '12px' }}>
+            {lista.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+          </select>
+        )}
       </div>
 
       {/* Avatar Section */}
@@ -308,14 +335,8 @@ export default function AthleteProfile() {
           🏅 CONQUISTAS DESBLOQUEADAS
         </h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '12px' }}>
-          {[
-            { emoji: '🔥', name: 'Disciplina Elite' },
-            { emoji: '💧', name: 'Hidratação Máxima' },
-            { emoji: '😴', name: 'Sono Perfeito' },
-            { emoji: '⚡', name: 'Atleta Consistente' },
-            { emoji: '🏆', name: 'Líder da Semana' },
-            { emoji: '🎯', name: 'Foco Total' },
-          ].map((achievement, idx) => (
+          {conquistas.length === 0 && <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.4)', gridColumn: '1 / -1' }}>Nenhuma conquista desbloqueada ainda.</p>}
+          {conquistas.map((achievement, idx) => (
             <div key={idx} style={{
               background: 'rgba(255,215,0,0.1)',
               border: '1px solid rgba(255,215,0,0.2)',
@@ -368,13 +389,8 @@ export default function AthleteProfile() {
           📊 GANHO DE XP ESTA SEMANA
         </h3>
         <div style={{ display: 'grid', gap: '12px' }}>
-          {[
-            { activity: 'Treinos Completos', xp: 800 },
-            { activity: 'Partidas Disputadas', xp: 600 },
-            { activity: 'Desafios Mind Game', xp: 400 },
-            { activity: 'Rotina Profissional', xp: 300 },
-            { activity: 'Disciplina Diária', xp: 350 },
-          ].map((item, idx) => (
+          {ganhos.length === 0 && <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>Nenhum XP ganho nos últimos 7 dias.</p>}
+          {ganhos.map((item, idx) => (
             <div key={idx} style={{
               display: 'flex',
               justifyContent: 'space-between',

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { ATHLETES, FINANCIAL, ATTENDANCE, COMPETITIONS, getBirthdaysThisMonth } from '@/lib/data';
+import { useAthletes, useFinancial, useDashboard, competenciaAtual } from '@/lib/queries';
+import { Loading, ErrorState } from '@/components/PageState';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { Users, UserCheck, UserX, TrendingUp, Trophy, AlertCircle, Zap, Target } from 'lucide-react';
 
@@ -18,37 +19,34 @@ function AnimatedNumber({ value, duration = 1200 }: { value: number; duration?: 
   return <>{display}</>;
 }
 
-const EVOLUTION_DATA = [
-  { month: 'Jan', atletas: 8, presenca: 82 },
-  { month: 'Fev', atletas: 9, presenca: 85 },
-  { month: 'Mar', atletas: 10, presenca: 88 },
-  { month: 'Abr', atletas: 11, presenca: 86 },
-  { month: 'Mai', atletas: 12, presenca: 90 },
-];
-
-const PERFORMANCE_DATA = [
-  { name: 'Lucas', score: 95 },
-  { name: 'Pedro', score: 88 },
-  { name: 'Gabriel', score: 82 },
-  { name: 'Matheus', score: 91 },
-  { name: 'Felipe', score: 75 },
-];
-
-const ATTENDANCE_DISTRIBUTION = [
-  { name: 'Presentes', value: 42, color: '#22C55E' },
-  { name: 'Ausentes', value: 3, color: '#EF4444' },
-  { name: 'Atrasados', value: 5, color: '#EAB308' },
-];
-
 export default function Dashboard() {
-  const totalAthletes = ATHLETES.filter(a => a.status === 'active').length;
-  const todayAttendance = ATTENDANCE.filter(a => a.date === '2026-05-15');
-  const presentToday = todayAttendance.filter(a => a.status === 'present').length;
-  const absentToday = todayAttendance.filter(a => a.status === 'absent').length;
-  const lateToday = todayAttendance.filter(a => a.status === 'late').length;
-  const birthdays = getBirthdaysThisMonth();
-  const pendingPayments = FINANCIAL.filter(f => f.status === 'pending' || f.status === 'overdue').length;
-  const attendanceRate = Math.round((presentToday / (presentToday + absentToday + lateToday)) * 100);
+  const atl = useAthletes();
+  const fin = useFinancial(competenciaAtual());
+  const dash = useDashboard();
+  const athletes = atl.data ?? [];
+  const financial = fin.data ?? [];
+  const totalAthletes = athletes.filter(a => a.status === 'active').length;
+  const presentToday = dash.data?.presentes ?? 0;
+  const absentToday = dash.data?.ausentes ?? 0;
+  const lateToday = dash.data?.atrasados ?? 0;
+  const registrosHoje = presentToday + absentToday + lateToday;
+  const attendanceRate = registrosHoje ? Math.round(((presentToday + lateToday) / registrosHoje) * 100) : 0;
+  const mesAtual = new Date().getMonth() + 1;
+  const birthdays = athletes.filter(a => Number(a.birthDate.split('-')[1]) === mesAtual);
+  const pendingPayments = financial.filter(f => f.status === 'pending' || f.status === 'overdue').length;
+  const EVOLUTION_DATA = dash.data?.evolucao ?? [];
+  const PERFORMANCE_DATA = [...athletes]
+    .map(a => ({ name: a.name.split(' ')[0], score: (a.goals ?? 0) * 3 + (a.assists ?? 0) * 2 }))
+    .sort((a, b) => b.score - a.score).slice(0, 5);
+  const ATTENDANCE_DISTRIBUTION = [
+    { name: 'Presentes', value: presentToday, color: '#22C55E' },
+    { name: 'Ausentes', value: absentToday, color: '#EF4444' },
+    { name: 'Atrasados', value: lateToday, color: '#EAB308' },
+  ];
+  const competitionsCount = dash.data?.competicoes ?? 0;
+
+  if (atl.isLoading || dash.isLoading) return <Loading />;
+  if (atl.isError || dash.isError) return <ErrorState onRetry={() => { atl.refetch(); dash.refetch(); }} />;
 
   const StatCard = ({ icon: Icon, label, value, sub, color, delay }: any) => (
     <div
@@ -83,8 +81,7 @@ export default function Dashboard() {
         {sub && <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', color: color, background: `${color}15`, padding: '4px 10px', borderRadius: '4px', border: `1px solid ${color}30`, fontWeight: 600 }}>{sub}</span>}
       </div>
       <p style={{ fontSize: '32px', fontWeight: 700, color: '#fff', marginBottom: '6px', fontFamily: 'Barlow Condensed, sans-serif', letterSpacing: '0.5px' }}>
-        <AnimatedNumber value={typeof value === 'number' ? value : 0} />
-        {typeof value === 'string' && value}
+        {typeof value === 'number' ? <AnimatedNumber value={value} /> : value}
       </p>
       <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontWeight: 500 }}>{label}</p>
     </div>
@@ -121,7 +118,7 @@ export default function Dashboard() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '8px' }}>
           <img
-            src="/manus-storage/68db7c69-d5fd-4129-8544-30bbc90c29b1_1c2e822c.jpg"
+            src="/escudo-nadgol.svg"
             alt="Nadgol Academy Shield"
             style={{ width: '48px', height: 'auto', filter: 'drop-shadow(0 0 16px rgba(204,26,26,0.3))' }}
           />
@@ -143,7 +140,7 @@ export default function Dashboard() {
         <StatCard icon={UserX} label="Ausentes" value={absentToday} color="#EF4444" delay={150} />
         <StatCard icon={AlertCircle} label="Atrasados" value={lateToday} color="#EAB308" delay={200} />
         <StatCard icon={TrendingUp} label="Taxa de Presença" value={`${attendanceRate}%`} color="#3B82F6" delay={250} />
-        <StatCard icon={Trophy} label="Competições" value={COMPETITIONS.length} color="#A855F7" delay={300} />
+        <StatCard icon={Trophy} label="Competições" value={competitionsCount} color="#A855F7" delay={300} />
       </div>
 
       {/* Main Charts Grid */}
@@ -201,19 +198,19 @@ export default function Dashboard() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: '#1A1A1A', borderRadius: '6px', border: '1px solid #2A2A2A' }}>
               <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: 'rgba(255,255,255,0.7)' }}>Pagos</span>
               <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '18px', fontWeight: 700, color: '#22C55E' }}>
-                {FINANCIAL.filter(f => f.status === 'paid').length}
+                {financial.filter(f => f.status === 'paid').length}
               </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: '#1A1A1A', borderRadius: '6px', border: '1px solid #2A2A2A' }}>
               <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: 'rgba(255,255,255,0.7)' }}>Pendentes</span>
               <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '18px', fontWeight: 700, color: '#EAB308' }}>
-                {FINANCIAL.filter(f => f.status === 'pending').length}
+                {financial.filter(f => f.status === 'pending').length}
               </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: '#1A1A1A', borderRadius: '6px', border: '1px solid #2A2A2A' }}>
               <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: 'rgba(255,255,255,0.7)' }}>Atrasados</span>
               <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '18px', fontWeight: 700, color: '#EF4444' }}>
-                {FINANCIAL.filter(f => f.status === 'overdue').length}
+                {financial.filter(f => f.status === 'overdue').length}
               </span>
             </div>
           </div>
@@ -246,7 +243,7 @@ export default function Dashboard() {
           </div>
           <div style={{ padding: '12px', background: '#1A1A1A', borderRadius: '6px', border: '1px solid #2A2A2A', cursor: 'pointer', transition: 'all 200ms' }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#CC1A1A'; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#2A2A2A'; }}>
             <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}>Próximas Competições</p>
-            <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '20px', fontWeight: 700, color: '#A855F7' }}>{COMPETITIONS.length}</p>
+            <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '20px', fontWeight: 700, color: '#A855F7' }}>{competitionsCount}</p>
           </div>
         </div>
       </div>

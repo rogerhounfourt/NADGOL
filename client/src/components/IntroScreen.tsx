@@ -82,7 +82,7 @@ export default function IntroScreen({ role, name, onComplete }: IntroScreenProps
         transitionDelay: '600ms',
       }}>
         <img
-          src="/manus-storage/68db7c69-d5fd-4129-8544-30bbc90c29b1_1c2e822c.jpg"
+          src="/escudo-nadgol.svg"
           alt="Nadgol Academy Shield"
           style={{ width: '120px', height: 'auto', filter: 'drop-shadow(0 0 32px rgba(204,26,26,0.5)) drop-shadow(0 0 16px rgba(204,26,26,0.3))' }}
         />
@@ -95,7 +95,7 @@ export default function IntroScreen({ role, name, onComplete }: IntroScreenProps
         transitionDelay: '700ms',
       }}>
         <img
-          src="/manus-storage/68db7c69-d5fd-4129-8544-30bbc90c29b1_1c2e822c.jpg"
+          src="/escudo-nadgol.svg"
           alt="Nadgol Academy Shield"
           style={{ width: '80px', height: 'auto', filter: 'drop-shadow(0 0 24px rgba(204,26,26,0.4))' }}
         />
@@ -217,7 +217,7 @@ export default function IntroScreen({ role, name, onComplete }: IntroScreenProps
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', filter: 'drop-shadow(0 4px 16px rgba(204,26,26,0.3))' }}>
             <img
-              src="/manus-storage/68db7c69-d5fd-4129-8544-30bbc90c29b1_1c2e822c.jpg"
+              src="/escudo-nadgol.svg"
               alt="Nadgol Academy Shield"
               style={{ width: '48px', height: 'auto' }}
             />
@@ -243,7 +243,7 @@ export default function IntroScreen({ role, name, onComplete }: IntroScreenProps
 export function NadgolShield({ size = 40, className = '' }: { size?: number; className?: string }) {
   return (
     <img
-      src="/manus-storage/68db7c69-d5fd-4129-8544-30bbc90c29b1_1c2e822c.jpg"
+      src="/escudo-nadgol.svg"
       alt="Nadgol Academy Shield"
       style={{ width: size, height: 'auto' }}
       className={className}

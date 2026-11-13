@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 240" role="img" aria-label="Nadgol Academy">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1c1c1c"/><stop offset="1" stop-color="#080808"/>
+    </linearGradient>
+  </defs>
+  <path d="M100 6 L188 34 V120 C188 176 150 214 100 234 C50 214 12 176 12 120 V34 Z" fill="url(#g)" stroke="#CC1A1A" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M100 26 L170 48 V120 C170 164 140 195 100 212 C60 195 30 164 30 120 V48 Z" fill="none" stroke="#ffffff" stroke-opacity=".18" stroke-width="2"/>
+  <path d="M62 150 V70 H82 L118 120 V70 H138 V150 H118 L82 100 V150 Z" fill="#ffffff"/>
+  <rect x="62" y="164" width="76" height="6" rx="3" fill="#CC1A1A"/>
+</svg>

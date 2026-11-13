@@ -1,14 +1,23 @@
 import { useState } from 'react';
-import { Brain, Award, TrendingUp } from 'lucide-react';
+import { useApp } from '@/contexts/AppContext';
+import { Loading } from '@/components/PageState';
+import { useAthleteXp, useMindGame, useAnswerMindGame, useXpRanking } from '@/lib/queries';
 
 export default function MindGame() {
+  const { currentUser, demo } = useApp();
+  const atletaId = currentUser?.role === 'athlete' ? currentUser.atletaId ?? '' : '';
+  const jogo = useMindGame(atletaId);
+  const xpQ = useAthleteXp(atletaId);
+  const responder = useAnswerMindGame();
+  const rankXp = useXpRanking();
+  const [resultado, setResultado] = useState<{ correta: boolean; explicacao: string } | null>(null);
   const [currentChallenge, setCurrentChallenge] = useState(0);
   const [score, setScore] = useState(0);
   const [coins, setCoins] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [answered, setAnswered] = useState(false);
 
-  const challenges = [
+  const challengesDemo = [
     {
       id: 1,
       situation: 'Você está na lateral direita, o lateral esquerdo está marcado. Qual é a melhor decisão?',
@@ -44,19 +53,36 @@ export default function MindGame() {
     },
   ];
 
+  const challenges = demo ? challengesDemo : (jogo.data ?? []).map((d, i) => ({
+    id: d.id,
+    situation: d.cenario,
+    image: ['⚽', '🎯', '🛡️', '⚡', '🧠', '🏆'][i % 6],
+    options: d.opcoes.map((label, idx) => ({
+      id: String.fromCharCode(65 + idx), label,
+      correct: answered && selectedAnswer === String.fromCharCode(65 + idx) ? !!resultado?.correta : false,
+    })),
+    explanation: resultado?.explicacao ?? '',
+  }));
   const challenge = challenges[currentChallenge];
 
   const handleAnswer = (optionId: string) => {
     if (answered) return;
     
-    setSelectedAnswer(optionId);
-    setAnswered(true);
-    
-    const isCorrect = challenge.options.find(opt => opt.id === optionId)?.correct;
-    if (isCorrect) {
-      setScore(score + 100);
-      setCoins(coins + 50);
+    if (demo) {
+      setSelectedAnswer(optionId);
+      setAnswered(true);
+      const isCorrect = challenge.options.find(opt => opt.id === optionId)?.correct;
+      if (isCorrect) {
+        setScore(score + 100);
+        setCoins(coins + 50);
+      }
+      return;
     }
+    // Valendo: o servidor confere a resposta e dá o XP
+    if (!atletaId || responder.isPending) return;
+    responder.mutate({ desafioId: String(challenge.id), atletaId, opcao: optionId.charCodeAt(0) - 65 }, {
+      onSuccess: r => { if (r) { setResultado({ correta: r.correta, explicacao: r.explicacao }); setSelectedAnswer(optionId); setAnswered(true); } },
+    });
   };
 
   const nextChallenge = () => {
@@ -64,8 +90,20 @@ export default function MindGame() {
       setCurrentChallenge(currentChallenge + 1);
       setSelectedAnswer(null);
       setAnswered(false);
+      setResultado(null);
     }
   };
+
+  const placar = demo ? score : xpQ.data?.xp ?? 0;
+  const moedas = demo ? coins : xpQ.data?.coins ?? 0;
+
+  if (!demo && currentUser?.role !== 'athlete') {
+    return <div style={{ padding: '24px', fontFamily: 'DM Sans, sans-serif', color: 'rgba(255,255,255,0.6)', fontSize: '14px' }}>O Mind Game é jogado pelos atletas. Entre com a conta de um atleta para participar.</div>;
+  }
+  if (!demo && (jogo.isLoading || xpQ.isLoading)) return <Loading />;
+  if (!demo && !challenge) {
+    return <div style={{ padding: '24px', fontFamily: 'DM Sans, sans-serif', color: 'rgba(255,255,255,0.7)', fontSize: '14px' }}>🎉 Você respondeu todos os desafios disponíveis. Volte em breve para novos desafios!</div>;
+  }
 
   return (
     <div style={{ padding: '24px', background: '#0a0a0a', minHeight: '100vh' }}>
@@ -92,7 +130,7 @@ export default function MindGame() {
             Pontuação
           </p>
           <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '24px', fontWeight: 800, color: '#CC1A1A', margin: 0 }}>
-            {score}
+            {placar}
           </p>
         </div>
         <div style={{
@@ -106,7 +144,7 @@ export default function MindGame() {
             Nadgol Coins
           </p>
           <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '24px', fontWeight: 800, color: '#FFD700', margin: 0 }}>
-            {coins}
+            {moedas}
           </p>
         </div>
         <div style={{
@@ -120,7 +158,7 @@ export default function MindGame() {
             Nível Mental
           </p>
           <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '24px', fontWeight: 800, color: '#00D4FF', margin: 0 }}>
-            {Math.floor(score / 300) + 1}
+            {Math.floor(placar / 300) + 1}
           </p>
         </div>
       </div>
@@ -323,11 +361,11 @@ export default function MindGame() {
           🏆 RANKING MENTAL
         </h3>
         <div style={{ display: 'grid', gap: '12px' }}>
-          {[
+          {(demo ? [
             { rank: 1, name: 'Você', score: 450, medal: '🥇' },
             { rank: 2, name: 'João Silva', score: 380, medal: '🥈' },
             { rank: 3, name: 'Pedro Costa', score: 320, medal: '🥉' },
-          ].map((player) => (
+          ] : (rankXp.data ?? []).map((r, i) => ({ rank: i + 1, name: r.id === atletaId ? 'Você' : r.nome.split(' ')[0], score: r.xp, medal: ['🥇', '🥈', '🥉'][i] }))).map((player) => (
             <div key={player.rank} style={{
               display: 'flex',
               alignItems: 'center',

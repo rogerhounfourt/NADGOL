@@ -1,9 +1,18 @@
 import { useState } from 'react';
-import { FINANCIAL, ATHLETES } from '@/lib/data';
-import { DollarSign, CheckCircle2, AlertCircle, TrendingUp } from 'lucide-react';
+import { useApp } from '@/contexts/AppContext';
+import { useAthletes, useFinancial, useGenerateFees, useSetFeePaid, competenciaAtual, nomeCompetencia } from '@/lib/queries';
+import { Loading, Empty, ErrorState } from '@/components/PageState';
+import { DollarSign, CheckCircle2, AlertCircle, TrendingUp, Undo2 } from 'lucide-react';
 
 export default function Financial() {
   const [filter, setFilter] = useState<'all' | 'paid' | 'pending' | 'overdue'>('all');
+  const { currentUser, demo } = useApp();
+  const isAdmin = currentUser?.role === 'admin';
+  const [competencia, setCompetencia] = useState(competenciaAtual);
+  const { data: FINANCIAL = [], isLoading, isError, refetch } = useFinancial(competencia);
+  const { data: ATHLETES = [] } = useAthletes();
+  const generate = useGenerateFees();
+  const setPaid = useSetFeePaid();
 
   const records = FINANCIAL.filter(f => filter === 'all' || f.status === filter);
   const paid = FINANCIAL.filter(f => f.status === 'paid').length;
@@ -37,7 +46,7 @@ export default function Financial() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '8px' }}>
           <img
-            src="/manus-storage/68db7c69-d5fd-4129-8544-30bbc90c29b1_1c2e822c.jpg"
+            src="/escudo-nadgol.svg"
             alt="Nadgol Academy Shield"
             style={{ width: '44px', height: 'auto', filter: 'drop-shadow(0 0 16px rgba(204,26,26,0.3))' }}
           />
@@ -46,11 +55,28 @@ export default function Financial() {
               Financeiro
             </h1>
             <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.4)', letterSpacing: '1px' }}>
-              Gestão de mensalidades e pagamentos · Maio 2026
+              Gestão de mensalidades e pagamentos · {demo ? 'Maio 2026' : nomeCompetencia(competencia)}
             </p>
           </div>
         </div>
       </div>
+
+      {/* Mês de referência e geração das mensalidades */}
+      {!demo && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', marginBottom: '20px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+            Mês
+            <input type="month" value={competencia} onChange={e => e.target.value && setCompetencia(e.target.value)}
+              style={{ padding: '9px 12px', background: '#111111', border: '1px solid #1E1E1E', borderRadius: '6px', color: '#fff', fontFamily: 'DM Sans, sans-serif', fontSize: '13px', outline: 'none', colorScheme: 'dark' }} />
+          </label>
+          {isAdmin && (
+            <button onClick={() => generate.mutate(competencia)} disabled={generate.isPending} className="nadgol-btn-primary"
+              style={{ padding: '10px 18px', borderRadius: '6px', fontSize: '13px', border: 'none', cursor: 'pointer', opacity: generate.isPending ? 0.5 : 1 }}>
+              {generate.isPending ? 'Gerando...' : `Gerar mensalidades de ${nomeCompetencia(competencia)}`}
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '32px' }}>
@@ -71,7 +97,7 @@ export default function Financial() {
               <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '24px', fontWeight: 700, color: '#22C55E' }}>{paid}</p>
             </div>
           </div>
-          <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>R$ {totalRevenue.toLocaleString('pt-BR')}</p>
+          <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>R$ {totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
         </div>
 
         <div style={{
@@ -176,6 +202,12 @@ export default function Financial() {
           </h3>
         </div>
 
+        {isLoading && <Loading label="Carregando mensalidades..." />}
+        {isError && <ErrorState onRetry={() => void refetch()} />}
+        {!isLoading && !isError && records.length === 0 && (
+          <Empty title={FINANCIAL.length ? 'Nada nesse filtro' : 'Nenhuma mensalidade neste mês'} hint={!FINANCIAL.length && isAdmin ? 'Defina o valor da mensalidade no cadastro dos atletas e clique em "Gerar mensalidades".' : undefined} />
+        )}
+
         <div style={{ display: 'grid', gap: '12px' }}>
           {records.map((rec, idx) => {
             const athlete = getAthlete(rec.athleteId);
@@ -192,7 +224,7 @@ export default function Financial() {
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   opacity: 0,
-                  animation: `fadeInUp 0.5s cubic-bezier(0.23, 1, 0.32, 1) ${250 + idx * 30}ms forwards`,
+                  animation: `fadeInUp 0.5s cubic-bezier(0.23, 1, 0.32, 1) ${250 + Math.min(idx, 12) * 30}ms forwards`,
                   transition: 'all 200ms ease-out',
                 }}
                 onMouseEnter={(e) => {
@@ -209,14 +241,27 @@ export default function Financial() {
                     {athlete?.name || 'Atleta Desconhecido'}
                   </p>
                   <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>
-                    {rec.month}/{rec.year} · {rec.paidDate ? new Date(rec.paidDate).toLocaleDateString('pt-BR') : 'Não pago'}
+                    {rec.month}/{rec.year} · {rec.paidDate ? `Pago em ${new Date(`${rec.paidDate}T12:00:00`).toLocaleDateString('pt-BR')}` : 'Não pago'}
                   </p>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  {isAdmin && !demo && (
+                    rec.status === 'paid' ? (
+                      <button onClick={() => setPaid.mutate({ id: rec.id, pago: false })} disabled={setPaid.isPending} title="Desfazer pagamento" aria-label="Desfazer pagamento"
+                        style={{ padding: '8px', background: 'transparent', border: '1px solid #2A2A2A', borderRadius: '6px', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', display: 'flex' }}>
+                        <Undo2 size={14} />
+                      </button>
+                    ) : (
+                      <button onClick={() => setPaid.mutate({ id: rec.id, pago: true })} disabled={setPaid.isPending}
+                        style={{ padding: '8px 12px', background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.35)', borderRadius: '6px', color: '#22C55E', fontFamily: 'DM Sans, sans-serif', fontSize: '12px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                        Marcar pago
+                      </button>
+                    )
+                  )}
                   <div style={{ textAlign: 'right' }}>
                     <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '18px', fontWeight: 700, color: '#fff', marginBottom: '2px' }}>
-                      R$ {rec.amount.toLocaleString('pt-BR')}
+                      R$ {rec.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </p>
                     <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '11px', color: statusColor, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                       {getStatusLabel(rec.status)}

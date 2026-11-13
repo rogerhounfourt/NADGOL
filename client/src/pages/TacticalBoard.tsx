@@ -1,5 +1,8 @@
 import React, { useState } from "react";
-import { Plus, Save, RotateCcw, Copy, Trash2, Play } from "lucide-react";
+import { Save, Copy, Trash2, Play } from "lucide-react";
+import { useApp } from "@/contexts/AppContext";
+import FormModal from "@/components/FormModal";
+import { useTacticalBoards, useSaveTacticalBoard, useDeleteTacticalBoard } from "@/lib/queries";
 
 interface Player {
   id: number;
@@ -29,6 +32,13 @@ const TacticalBoard = () => {
     { id: 9, number: 10, name: "Atacante", position: "ST", x: 80, y: 50, team: "home" },
   ]);
 
+  const { currentUser, demo } = useApp();
+  const boards = useTacticalBoards();
+  const salvarQuadro = useSaveTacticalBoard();
+  const excluirQuadro = useDeleteTacticalBoard();
+  const [nomeModal, setNomeModal] = useState(false);
+  const [carregado, setCarregado] = useState("");
+  const podeSalvar = demo || currentUser?.role === "admin" || currentUser?.role === "coach";
   const [selectedPlayer, setSelectedPlayer] = useState<number | null>(null);
   const [selectedFormation, setSelectedFormation] = useState("4-3-3");
   const [teamColor, setTeamColor] = useState("red");
@@ -141,7 +151,7 @@ const TacticalBoard = () => {
       <div style={{ marginBottom: "24px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
           <img
-            src="https://manus-storage.s3.us-west-2.amazonaws.com/nadgol-shield.jpg"
+            src="/escudo-nadgol.svg"
             alt="Nadgol Shield"
             style={{ width: "32px", height: "32px" }}
           />
@@ -210,6 +220,34 @@ const TacticalBoard = () => {
           </div>
         </div>
 
+        {/* Estratégias salvas */}
+        {(boards.data ?? []).length > 0 && (
+          <div style={{ background: "#1A1A1A", border: "1px solid #333333", borderRadius: "12px", padding: "16px" }}>
+            <label style={{ fontSize: "12px", fontWeight: "600", color: "#999999", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>
+              Estratégias salvas
+            </label>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <select
+                value={carregado}
+                onChange={(e) => {
+                  const q = (boards.data ?? []).find(b => b.id === e.target.value);
+                  setCarregado(e.target.value);
+                  if (q) { setSelectedFormation(q.formacao); setTeamColor(q.cor); setPlayers(q.jogadores as Player[]); setSelectedPlayer(null); }
+                }}
+                style={{ flex: 1, padding: "10px", background: "#0A0A0A", border: "1px solid #333333", borderRadius: "6px", color: "#FFFFFF", fontSize: "14px" }}
+              >
+                <option value="">Carregar…</option>
+                {(boards.data ?? []).map(b => <option key={b.id} value={b.id}>{b.nome} ({b.formacao})</option>)}
+              </select>
+              {podeSalvar && carregado && (
+                <button onClick={() => { excluirQuadro.mutate(carregado); setCarregado(""); }} aria-label="Excluir estratégia" style={{ padding: "10px", background: "transparent", border: "1px solid #CC1A1A", borderRadius: "6px", color: "#CC1A1A", cursor: "pointer" }}>
+                  <Trash2 style={{ width: "16px", height: "16px" }} />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Actions */}
         <div style={{ display: "flex", gap: "8px" }}>
           <button
@@ -233,7 +271,8 @@ const TacticalBoard = () => {
             <Play style={{ width: "16px", height: "16px" }} />
             Jogadas
           </button>
-          <button
+          {podeSalvar && <button
+            onClick={() => setNomeModal(true)}
             style={{
               flex: 1,
               padding: "10px",
@@ -252,7 +291,7 @@ const TacticalBoard = () => {
           >
             <Save style={{ width: "16px", height: "16px" }} />
             Salvar
-          </button>
+          </button>}
         </div>
       </div>
 
@@ -351,6 +390,12 @@ const TacticalBoard = () => {
             </div>
             <div style={{ display: "flex", gap: "8px" }}>
               <button
+                onClick={() => {
+                  const p = players.find(x => x.id === selectedPlayer);
+                  if (!p) return;
+                  const id = Math.max(0, ...players.map(x => x.id)) + 1;
+                  setPlayers([...players, { ...p, id, x: Math.min(95, p.x + 4), y: Math.min(95, p.y + 4) }]);
+                }}
                 style={{
                   padding: "8px 12px",
                   background: "transparent",
@@ -368,6 +413,7 @@ const TacticalBoard = () => {
                 Duplicar
               </button>
               <button
+                onClick={() => { setPlayers(players.filter(x => x.id !== selectedPlayer)); setSelectedPlayer(null); }}
                 style={{
                   padding: "8px 12px",
                   background: "transparent",
@@ -395,6 +441,15 @@ const TacticalBoard = () => {
           💡 <strong>Dica:</strong> Arraste os jogadores pelo campo para posicioná-los. Selecione uma formação para aplicar automaticamente. Salve suas estratégias para reutilizar em futuras partidas.
         </p>
       </div>
+
+      {nomeModal && (
+        <FormModal
+          title="Salvar estratégia" submitLabel="Salvar" saving={salvarQuadro.isPending}
+          fields={[{ name: "nome", label: "Nome da estratégia", required: true, placeholder: "Ex.: Pressão alta Sub-11" }]}
+          onSubmit={v => salvarQuadro.mutate({ nome: v.nome, formacao: selectedFormation, jogadores: players, cor: teamColor }, { onSuccess: () => setNomeModal(false) })}
+          onClose={() => setNomeModal(false)}
+        />
+      )}
     </div>
   );
 };

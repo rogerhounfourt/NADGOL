@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { NadgolShield } from './IntroScreen';
+import { ROLE_PERMISSIONS } from '@/lib/permissions';
 import {
   LayoutDashboard, Users, UserCheck, ClipboardList, Activity,
   Trophy, DollarSign, TrendingUp, Medal, Bell, MessageSquare,
-  Settings, ChevronLeft, ChevronRight, LogOut, Zap, BookOpen, Eye, Brain, Heart, Radar, Clipboard, Lightbulb
+  Settings, ChevronLeft, ChevronRight, LogOut, Zap, BookOpen, Eye, Brain, Heart, Radar, Clipboard, Lightbulb, KeyRound
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -29,15 +30,10 @@ const NAV_ITEMS = [
   { id: 'ranking', label: 'Ranking', icon: Medal },
   { id: 'notifications', label: 'Notificações', icon: Bell },
   { id: 'chat', label: 'Chat Interno', icon: MessageSquare },
+  { id: 'access', label: 'Acessos', icon: KeyRound },
   { id: 'settings', label: 'Configurações', icon: Settings },
 ];
 
-const ROLE_PERMISSIONS: Record<string, string[]> = {
-  admin: ['dashboard', 'classes', 'athletes', 'attendance', 'performance', 'nadscore', 'journey', 'scout', 'intelligence', 'mentality', 'radar', 'competitions', 'financial', 'evolution', 'ranking', 'notifications', 'chat', 'settings'],
-  coach: ['dashboard', 'classes', 'athletes', 'attendance', 'performance', 'nadscore', 'journey', 'scout', 'intelligence', 'mentality', 'radar', 'tactical', 'competitions', 'evolution', 'ranking', 'notifications', 'chat'],
-  parent: ['dashboard', 'attendance', 'financial', 'evolution', 'nadscore', 'journey', 'mentality', 'notifications', 'chat'],
-  athlete: ['dashboard', 'performance', 'nadscore', 'journey', 'scout', 'intelligence', 'mentality', 'radar', 'daily', 'mindgame', 'profile', 'evolution', 'ranking', 'notifications', 'chat'],
-};
 
 export default function Sidebar() {
   const { currentUser, activeSection, setActiveSection, sidebarOpen, setSidebarOpen, setCurrentUser, setShowIntro } = useApp();
@@ -100,7 +96,7 @@ export default function Sidebar() {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden', filter: 'drop-shadow(0 0 12px rgba(204,26,26,0.25))' }}>
             <img
-              src="/manus-storage/68db7c69-d5fd-4129-8544-30bbc90c29b1_1c2e822c.jpg"
+              src="/escudo-nadgol.svg"
               alt="Nadgol Academy Shield"
               style={{ width: '40px', height: 'auto' }}
             />

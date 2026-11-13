@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { Loading, Empty, ErrorState } from "@/components/PageState";
+import { useAthleteMetrics, usePhysicalEvals, useDailyLogs, useMatchLog } from "@/lib/queries";
 import { Brain, TrendingUp, AlertCircle, CheckCircle, Zap, Target } from "lucide-react";
 
 interface Insight {
@@ -13,56 +15,47 @@ interface Insight {
 const NadgolIntelligence = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
 
-  const insights: Insight[] = [
-    {
-      id: 1,
-      category: "Desempenho Físico",
-      message: "Seu desempenho físico caiu 8% nos últimos 3 dias. Recomendamos aumentar o descanso e a hidratação.",
-      type: "warning",
-      icon: <AlertCircle className="w-5 h-5" />,
-      color: "from-yellow-500 to-yellow-600",
-    },
-    {
-      id: 2,
-      category: "Técnica",
-      message: "Seu lado mais utilizado é o esquerdo. Trabalhe mais com o pé direito para melhorar versatilidade.",
-      type: "info",
-      icon: <Target className="w-5 h-5" />,
-      color: "from-blue-500 to-blue-600",
-    },
-    {
-      id: 3,
-      category: "Ofensiva",
-      message: "Você está tendo boa participação ofensiva com 3 gols em 4 partidas. Continue nesse ritmo!",
-      type: "success",
-      icon: <CheckCircle className="w-5 h-5" />,
-      color: "from-green-500 to-green-600",
-    },
-    {
-      id: 4,
-      category: "Condicionamento",
-      message: "Seu condicionamento melhorou 15% em relação ao mês anterior. Excelente evolução!",
-      type: "improvement",
-      icon: <TrendingUp className="w-5 h-5" />,
-      color: "from-purple-500 to-purple-600",
-    },
-    {
-      id: 5,
-      category: "Velocidade",
-      message: "Você evoluiu em velocidade de pico. Sua marca anterior era 31 km/h, agora atingiu 33 km/h.",
-      type: "success",
-      icon: <Zap className="w-5 h-5" />,
-      color: "from-red-500 to-red-600",
-    },
-    {
-      id: 6,
-      category: "Posicionamento",
-      message: "Seu mapa de calor mostra maior presença no meio-campo. Considere atuar mais na frente.",
-      type: "info",
-      icon: <Target className="w-5 h-5" />,
-      color: "from-cyan-500 to-cyan-600",
-    },
-  ];
+  const q = useAthleteMetrics();
+  const [atletaId, setAtletaId] = useState("");
+  const lista = q.data ?? [];
+  const atual = lista.find(m => m.id === atletaId) ?? lista[0];
+  const fis = usePhysicalEvals(atual?.id ?? "");
+  const diario = useDailyLogs(atual?.id ?? "");
+  const jogos = useMatchLog(atual?.id ?? "");
+
+  const insights: Insight[] = [];
+  const add = (category: string, message: string, type: Insight["type"]) => {
+    const cfg = {
+      warning: { icon: <AlertCircle className="w-5 h-5" />, color: "from-yellow-500 to-yellow-600" },
+      info: { icon: <Target className="w-5 h-5" />, color: "from-blue-500 to-blue-600" },
+      success: { icon: <CheckCircle className="w-5 h-5" />, color: "from-green-500 to-green-600" },
+      improvement: { icon: <TrendingUp className="w-5 h-5" />, color: "from-purple-500 to-purple-600" },
+    }[type];
+    insights.push({ id: insights.length + 1, category, message, type, ...cfg });
+  };
+  if (atual) {
+    const medias = (xs: (number | null)[]) => { const v = xs.filter((x): x is number => x !== null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
+    const f = fis.data ?? [];
+    const vel = f.filter(x => x.velocidade !== null);
+    if (vel.length >= 2) {
+      const ant = vel[vel.length - 2].velocidade!, nov = vel[vel.length - 1].velocidade!;
+      if (nov > ant) add("Velocidade", `Evolução em velocidade de pico: marca anterior ${ant} km/h, agora ${nov} km/h.`, "success");
+      else if (nov < ant) add("Velocidade", `Velocidade de pico caiu de ${ant} para ${nov} km/h na última medição.`, "warning");
+    }
+    if (atual.vo2Evolucao !== null) add("Condicionamento", `VO2 variou ${atual.vo2Evolucao > 0 ? "+" : ""}${atual.vo2Evolucao}% entre a primeira e a última medição.`, atual.vo2Evolucao >= 0 ? "improvement" : "warning");
+    const d = diario.data ?? [];
+    const sono = medias(d.map(x => x.sono)), agua = medias(d.map(x => x.agua)), tela = medias(d.map(x => x.tela));
+    if (sono !== null) add("Recuperação", sono < 8 ? `Média de sono de ${sono.toFixed(1)}h nos últimos dias: abaixo do ideal para a idade. Priorize o descanso.` : `Boa média de sono (${sono.toFixed(1)}h). Continue assim.`, sono < 8 ? "warning" : "success");
+    if (agua !== null && agua < 2) add("Hidratação", `Média de ${agua.toFixed(1)} L de água por dia. Recomendamos aumentar a hidratação.`, "warning");
+    if (tela !== null && tela > 4) add("Rotina", `Média de ${tela.toFixed(1)}h de tela por dia, o que pode afetar o sono e o foco.`, "info");
+    const j = jogos.data ?? [];
+    if (j.length) {
+      const gols = j.reduce((a, x) => a + x.gols, 0);
+      add("Ofensiva", `${gols} gol(s) em ${j.length} partida(s) registradas.`, gols > 0 ? "success" : "info");
+    }
+    if (atual.presenca < 75) add("Presença", `Presença de ${atual.presenca}%: abaixo da meta de 75%.`, "warning");
+    else add("Presença", `Presença de ${atual.presenca}%: dentro da meta.`, "success");
+  }
 
   const filteredInsights = selectedCategory === "all" 
     ? insights 
@@ -77,7 +70,7 @@ const NadgolIntelligence = () => {
       <div style={{ marginBottom: "32px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
           <img
-            src="https://manus-storage.s3.us-west-2.amazonaws.com/nadgol-shield.jpg"
+            src="/escudo-nadgol.svg"
             alt="Nadgol Shield"
             style={{ width: "32px", height: "32px" }}
           />
@@ -90,11 +83,21 @@ const NadgolIntelligence = () => {
         </p>
       </div>
 
+      {q.isLoading && <Loading />}
+      {q.isError && <ErrorState onRetry={() => q.refetch()} />}
+      {q.isSuccess && lista.length === 0 && <Empty title="Nenhum atleta" hint="Cadastre atletas para gerar insights." />}
+      {lista.length > 0 && (
+        <select value={atual?.id ?? ""} onChange={e => setAtletaId(e.target.value)}
+          style={{ marginBottom: "16px", padding: "8px 12px", background: "#1A1A1A", color: "#FFFFFF", border: "1px solid #333333", borderRadius: "6px" }}>
+          {lista.map(m => <option key={m.id} value={m.id}>{m.nome}</option>)}
+        </select>
+      )}
+
       {/* AI Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", marginBottom: "32px" }}>
         <div style={{ background: "#1A1A1A", border: "1px solid #333333", borderRadius: "12px", padding: "16px" }}>
           <div style={{ fontSize: "24px", fontWeight: "700", color: "#CC1A1A", marginBottom: "4px" }}>
-            6
+            {insights.length}
           </div>
           <div style={{ fontSize: "14px", color: "#999999" }}>
             Insights Ativos
@@ -102,7 +105,7 @@ const NadgolIntelligence = () => {
         </div>
         <div style={{ background: "#1A1A1A", border: "1px solid #333333", borderRadius: "12px", padding: "16px" }}>
           <div style={{ fontSize: "24px", fontWeight: "700", color: "#00CC00", marginBottom: "4px" }}>
-            3
+            {insights.filter(i => i.type === "success" || i.type === "improvement").length}
           </div>
           <div style={{ fontSize: "14px", color: "#999999" }}>
             Melhorias Detectadas
@@ -110,7 +113,7 @@ const NadgolIntelligence = () => {
         </div>
         <div style={{ background: "#1A1A1A", border: "1px solid #333333", borderRadius: "12px", padding: "16px" }}>
           <div style={{ fontSize: "24px", fontWeight: "700", color: "#FFAA00", marginBottom: "4px" }}>
-            1
+            {insights.filter(i => i.type === "warning").length}
           </div>
           <div style={{ fontSize: "14px", color: "#999999" }}>
             Alerta Importante

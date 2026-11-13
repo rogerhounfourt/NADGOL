@@ -1,11 +1,24 @@
-import { COMPETITIONS, ATHLETES } from '@/lib/data';
+import { useState } from 'react';
+import { useApp } from '@/contexts/AppContext';
+import FormModal from '@/components/FormModal';
+import MatchesSection from '@/components/MatchesSection';
+import { Loading, Empty, ErrorState } from '@/components/PageState';
+import { useAthletes, useCompetitions, useCreateCompetition } from '@/lib/queries';
 import { Trophy, Calendar, Users, Plus, Target } from 'lucide-react';
 
 export default function Competitions() {
+  const { currentUser, demo } = useApp();
+  const comps = useCompetitions();
+  const atl = useAthletes();
+  const create = useCreateCompetition();
+  const [modal, setModal] = useState(false);
+  const ATHLETES = atl.data ?? [];
+  const COMPETITIONS = comps.data ?? [];
+  const podeCriar = demo || currentUser?.role === 'admin' || currentUser?.role === 'coach';
   const athleteStats = ATHLETES.map(a => ({
     ...a,
     competitions: COMPETITIONS.filter(c => c.athletes.includes(a.id)).length,
-  })).sort((a, b) => (a.goals ?? 0) > (b.goals ?? 0) ? -1 : 1).slice(0, 5);
+  })).filter(a => (a.goals ?? 0) > 0).sort((a, b) => (b.goals ?? 0) - (a.goals ?? 0)).slice(0, 5);
 
   return (
     <div style={{ padding: '24px' }}>
@@ -18,12 +31,15 @@ export default function Competitions() {
             </h2>
           </div>
         </div>
-        <button className="nadgol-btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '6px', fontSize: '13px' }}>
-          <Plus size={16} /> Nova Competição
-        </button>
+        {podeCriar && (
+          <button onClick={() => setModal(true)} className="nadgol-btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '6px', fontSize: '13px' }}>
+            <Plus size={16} /> Nova Competição
+          </button>
+        )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+      {comps.isLoading ? <Loading /> : comps.isError ? <ErrorState onRetry={() => comps.refetch()} /> : COMPETITIONS.length === 0 && <Empty title="Nenhuma competição" hint="Cadastre torneios e campeonatos da escolinha." />}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginBottom: '16px' }}>
         {COMPETITIONS.map((comp, i) => {
           const athletes = ATHLETES.filter(a => comp.athletes.includes(a.id));
           return (
@@ -46,13 +62,13 @@ export default function Competitions() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <Calendar size={13} color="rgba(255,255,255,0.35)" />
                       <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>
-                        {new Date(comp.date).toLocaleDateString('pt-BR')}
+                        {new Date(`${String(comp.date).slice(0, 10)}T12:00:00`).toLocaleDateString('pt-BR')}
                       </span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <Users size={13} color="rgba(255,255,255,0.35)" />
                       <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>
-                        {athletes.length} atletas
+                        {comp.athletes.length} atletas
                       </span>
                     </div>
                   </div>
@@ -88,8 +104,10 @@ export default function Competitions() {
         })}
       </div>
 
+      {!demo && <MatchesSection podeEditar={podeCriar} />}
+
       {/* Top scorers */}
-      <div className="nadgol-card" style={{ padding: '20px' }}>
+      {athleteStats.length > 0 && <div className="nadgol-card" style={{ padding: '20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
           <Target size={16} color="#CC1A1A" />
           <h3 style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: '16px', color: '#fff', textTransform: 'uppercase', letterSpacing: '1px' }}>
@@ -120,7 +138,22 @@ export default function Competitions() {
             </div>
           ))}
         </div>
-      </div>
+      </div>}
+
+      {modal && (
+        <FormModal
+          title="Nova competição" submitLabel="Criar" saving={create.isPending}
+          fields={[
+            { name: 'nome', label: 'Nome', required: true, placeholder: 'Ex.: Copa Serrinha Sub-11' },
+            { name: 'data', label: 'Data', type: 'date', required: true, half: true },
+            { name: 'local', label: 'Local', half: true },
+            { name: 'resultado', label: 'Resultado (preencha depois, se ainda não ocorreu)', placeholder: 'Ex.: Campeão' },
+            { name: 'convocar', label: 'Atletas convocados', type: 'select', options: [{ value: 'todos', label: 'Todos os atletas ativos' }, { value: 'nenhum', label: 'Ninguém por enquanto' }] },
+          ]}
+          onSubmit={v => create.mutate({ nome: v.nome, data: v.data, local: v.local, resultado: v.resultado, convocarTodos: v.convocar === 'todos' }, { onSuccess: () => setModal(false) })}
+          onClose={() => setModal(false)}
+        />
+      )}
     </div>
   );
 }

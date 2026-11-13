@@ -10,6 +10,12 @@ export interface User {
   role: UserRole;
   email: string;
   avatar?: string;
+  /** Escola ativa (multi-escola). Vazio no modo demonstração. */
+  escolaId?: string;
+  escolaNome?: string;
+  /** Preenchido quando o usuário logado é o próprio atleta. */
+  atletaId?: string;
+  superAdmin?: boolean;
 }
 
 export interface Athlete {

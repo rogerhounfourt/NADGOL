@@ -1,7 +1,29 @@
-import { CLASSES, ATHLETES, getCategory } from '@/lib/data';
+import { useState } from 'react';
+import { useApp } from '@/contexts/AppContext';
+import { useAthletes, useClasses, useCreateClass } from '@/lib/queries';
+import FormModal, { type FormField } from '@/components/FormModal';
+import { Loading, Empty, ErrorState } from '@/components/PageState';
+
+const DIAS = ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado', 'Domingo'];
+const FIELDS: FormField[] = [
+  { name: 'nome', label: 'Nome da turma', required: true, placeholder: 'Sub-13 — Terça 14h' },
+  { name: 'categoria', label: 'Categoria', half: true, placeholder: 'Sub-13' },
+  { name: 'maxAtletas', label: 'Máximo de atletas', type: 'number', half: true, placeholder: '20' },
+  { name: 'diaSemana', label: 'Dia', type: 'select', half: true, options: DIAS.map(d => ({ value: d, label: d })) },
+  { name: 'horario', label: 'Horário', type: 'time', half: true },
+  { name: 'treinadorNome', label: 'Treinador', half: true },
+  { name: 'unidadeNome', label: 'Unidade / local', half: true, placeholder: 'Unidade Centro' },
+];
 import { Users, Clock, MapPin, User, Plus } from 'lucide-react';
 
 export default function Classes() {
+  const { currentUser } = useApp();
+  const { data: CLASSES = [], isLoading, isError, refetch } = useClasses();
+  const { data: ATHLETES = [] } = useAthletes();
+  const createClass = useCreateClass();
+  const [creating, setCreating] = useState(false);
+  const isAdmin = currentUser?.role === 'admin';
+
   return (
     <div style={{ padding: '24px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
@@ -16,15 +38,24 @@ export default function Classes() {
             {CLASSES.length} turmas ativas
           </p>
         </div>
-        <button className="nadgol-btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '6px', fontSize: '13px' }}>
-          <Plus size={16} /> Nova Turma
-        </button>
+        {isAdmin && (
+          <button onClick={() => setCreating(true)} className="nadgol-btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '6px', fontSize: '13px' }}>
+            <Plus size={16} /> Nova Turma
+          </button>
+        )}
       </div>
+
+      {isLoading && <Loading label="Carregando turmas..." />}
+      {isError && <ErrorState onRetry={() => void refetch()} />}
+      {!isLoading && !isError && CLASSES.length === 0 && (
+        <Empty title="Nenhuma turma criada" hint={isAdmin ? 'Use "Nova Turma" para criar a primeira.' : undefined} />
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
         {CLASSES.map((cls, i) => {
           const athletes = ATHLETES.filter(a => cls.athletes.includes(a.id));
-          const occupancy = Math.round((athletes.length / cls.maxAthletes) * 100);
+          const total = cls.athletes.length;
+          const occupancy = Math.min(100, Math.round((total / Math.max(1, cls.maxAthletes)) * 100));
           return (
             <div
               key={cls.id}
@@ -67,7 +98,7 @@ export default function Classes() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                   <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>Ocupação</span>
                   <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: '14px', color: occupancy > 80 ? '#EAB308' : '#22C55E' }}>
-                    {athletes.length}/{cls.maxAthletes}
+                    {total}/{cls.maxAthletes}
                   </span>
                 </div>
                 <div style={{ height: '4px', background: '#2A2A2A', borderRadius: '2px', overflow: 'hidden' }}>
@@ -104,6 +135,18 @@ export default function Classes() {
           );
         })}
       </div>
+
+      {creating && (
+        <FormModal
+          title="Nova Turma" fields={FIELDS} submitLabel="Criar turma" saving={createClass.isPending}
+          onClose={() => setCreating(false)}
+          onSubmit={v => createClass.mutate({
+            nome: v.nome, categoria: v.categoria, diaSemana: v.diaSemana, horario: v.horario,
+            treinadorNome: v.treinadorNome, unidadeNome: v.unidadeNome,
+            maxAtletas: v.maxAtletas ? Math.max(1, Math.round(Number(v.maxAtletas))) : undefined,
+          }, { onSuccess: () => setCreating(false) })}
+        />
+      )}
     </div>
   );
 }

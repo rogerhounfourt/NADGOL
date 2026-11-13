@@ -1,19 +1,24 @@
-import { useState } from 'react';
-import { ATHLETES, getCategory } from '@/lib/data';
+import { useEffect, useState } from 'react';
+import { useAthletes, usePhysicalEvals } from '@/lib/queries';
+import { Loading, Empty, ErrorState } from '@/components/PageState';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { TrendingUp, Camera } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
 
-const HISTORY = [
-  { month: 'Jan/26', peso: 55, altura: 162, vo2: 46, velocidade: 26.5 },
-  { month: 'Fev/26', peso: 56, altura: 163, vo2: 48, velocidade: 27.0 },
-  { month: 'Mar/26', peso: 56, altura: 163, vo2: 49, velocidade: 27.2 },
-  { month: 'Abr/26', peso: 57, altura: 164, vo2: 50, velocidade: 27.8 },
-  { month: 'Mai/26', peso: 58, altura: 165, vo2: 52, velocidade: 28.5 },
-];
+const MES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+const rotulo = (d: string) => `${MES[Number(d.slice(5, 7)) - 1]}/${d.slice(2, 4)}`;
+const rotuloLongo = (d: string) => `${MES[Number(d.slice(5, 7)) - 1]} ${d.slice(0, 4)}`;
 
 export default function Evolution() {
-  const [selectedAthlete, setSelectedAthlete] = useState(ATHLETES[0].id);
-  const athlete = ATHLETES.find(a => a.id === selectedAthlete)!;
+  const atl = useAthletes();
+  const ATHLETES = (atl.data ?? []).filter(a => a.status === 'active');
+  const [selectedAthlete, setSelectedAthlete] = useState('');
+  useEffect(() => { if (!selectedAthlete && ATHLETES[0]) setSelectedAthlete(ATHLETES[0].id); }, [ATHLETES, selectedAthlete]);
+  const medicoes = usePhysicalEvals(selectedAthlete);
+  const HISTORY = (medicoes.data ?? []).map(m => ({ month: rotulo(m.data), data: m.data, peso: m.peso ?? 0, altura: m.altura ?? 0, vo2: m.vo2 ?? 0, velocidade: m.velocidade ?? 0 }));
+
+  if (atl.isLoading) return <Loading />;
+  if (atl.isError) return <ErrorState onRetry={() => atl.refetch()} />;
+  if (ATHLETES.length === 0) return <Empty title="Nenhum atleta" hint="Cadastre atletas para acompanhar a evolução." />;
 
   const first = HISTORY[0];
   const last = HISTORY[HISTORY.length - 1];
@@ -48,11 +53,12 @@ export default function Evolution() {
         ))}
       </div>
 
+      {medicoes.isLoading ? <Loading /> : !first || !last ? <Empty title="Sem medições físicas" hint="Registre medições na tela Performance para ver a evolução." /> : (<>
       {/* Before / After comparison */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
         {[
-          { label: 'INÍCIO — Janeiro 2026', data: first, color: 'rgba(255,255,255,0.3)' },
-          { label: 'ATUAL — Maio 2026', data: last, color: '#CC1A1A' },
+          { label: `INÍCIO — ${rotuloLongo(first.data)}`, data: first, color: 'rgba(255,255,255,0.3)' },
+          { label: `ATUAL — ${rotuloLongo(last.data)}`, data: last, color: '#CC1A1A' },
         ].map(({ label, data, color }) => (
           <div key={label} className="nadgol-card" style={{ padding: '20px' }}>
             <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: '13px', color, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '16px' }}>
@@ -114,6 +120,7 @@ export default function Evolution() {
           </LineChart>
         </ResponsiveContainer>
       </div>
+      </>)}
     </div>
   );
 }

@@ -1,14 +1,20 @@
-import { ATHLETES, getCategory } from '@/lib/data';
+import { getCategory } from '@/lib/data';
+import { useRanking } from '@/lib/queries';
+import { Loading, Empty, ErrorState } from '@/components/PageState';
 import { Medal, Crown, Star } from 'lucide-react';
 
 export default function Ranking() {
-  const sorted = [...ATHLETES].filter(a => a.status === 'active').sort((a, b) => (a.ranking || 99) - (b.ranking || 99));
+  const q = useRanking();
+  const sorted = q.data ?? [];
+  if (q.isLoading) return <Loading />;
+  if (q.isError) return <ErrorState onRetry={() => q.refetch()} />;
+  if (sorted.length === 0) return <Empty title="Ranking vazio" hint="Cadastre atletas e registre presenças e jogos para o ranking aparecer." />;
 
   return (
     <div style={{ padding: '24px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
         <img
-          src="/manus-storage/68db7c69-d5fd-4129-8544-30bbc90c29b1_1c2e822c.jpg"
+          src="/escudo-nadgol.svg"
           alt="Nadgol Academy Shield"
           style={{ width: '36px', height: 'auto', filter: 'drop-shadow(0 0 10px rgba(204,26,26,0.2))' }}
         />

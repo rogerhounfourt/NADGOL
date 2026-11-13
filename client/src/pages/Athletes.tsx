@@ -1,5 +1,11 @@
 import { useState } from 'react';
-import { ATHLETES, getCategory, getAge, Athlete } from '@/lib/data';
+import { getCategory, getAge, Athlete } from '@/lib/data';
+import { useApp } from '@/contexts/AppContext';
+import { useAthletes, useClasses, useCreateAthlete, useAthleteMetrics } from '@/lib/queries';
+import ReportButton from '@/components/ReportButton';
+import { relatorioEscola } from '@/lib/relatorios';
+import FormModal, { type FormField } from '@/components/FormModal';
+import { Loading, Empty, ErrorState } from '@/components/PageState';
 import { Search, Plus, Filter, ChevronRight, X } from 'lucide-react';
 
 const POSITIONS = ['Todos', 'Atacante', 'Meio-Campo', 'Zagueiro', 'Lateral', 'Goleiro'];
@@ -61,14 +67,14 @@ function AthleteModal({ athlete, onClose }: { athlete: Athlete; onClose: () => v
         <div style={{ padding: '20px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             {[
-              { label: 'Data de Nasc.', value: new Date(athlete.birthDate).toLocaleDateString('pt-BR') },
+              { label: 'Data de Nasc.', value: new Date(`${athlete.birthDate}T12:00:00`).toLocaleDateString('pt-BR') },
               { label: 'Pé Dominante', value: athlete.dominantFoot },
-              { label: 'Altura', value: `${athlete.height} cm` },
-              { label: 'Peso', value: `${athlete.weight} kg` },
+              { label: 'Altura', value: athlete.height ? `${athlete.height} cm` : '—' },
+              { label: 'Peso', value: athlete.weight ? `${athlete.weight} kg` : '—' },
               { label: 'Unidade', value: athlete.unit },
               { label: 'Telefone', value: athlete.phone },
               { label: 'Clube que torce', value: athlete.favoriteClub || '—' },
-              { label: 'Ranking', value: `#${athlete.ranking}` },
+              { label: 'Ranking', value: athlete.ranking ? `#${athlete.ranking}` : '—' },
             ].map(({ label, value }) => (
               <div key={label} style={{ background: '#1A1A1A', borderRadius: '6px', padding: '10px 12px' }}>
                 <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>{label}</p>
@@ -93,8 +99,32 @@ export default function Athletes() {
   const [search, setSearch] = useState('');
   const [posFilter, setPosFilter] = useState('Todos');
   const [selected, setSelected] = useState<Athlete | null>(null);
+  const [creating, setCreating] = useState(false);
+  const { currentUser } = useApp();
+  const { data: athletes = [], isLoading, isError, refetch } = useAthletes();
+  const { data: classes = [] } = useClasses();
+  const metricas = useAthleteMetrics();
+  const createAthlete = useCreateAthlete();
+  const canEdit = currentUser?.role === 'admin' || currentUser?.role === 'coach';
 
-  const filtered = ATHLETES.filter(a => {
+  const fields: FormField[] = [
+    { name: 'nome', label: 'Nome completo', required: true },
+    { name: 'dataNascimento', label: 'Data de nascimento', type: 'date', required: true, half: true },
+    { name: 'posicao', label: 'Posição', type: 'select', half: true, options: POSITIONS.slice(1).map(v => ({ value: v, label: v })) },
+    { name: 'peDominante', label: 'Pé dominante', type: 'select', half: true, options: ['Direito', 'Esquerdo', 'Ambos'].map(v => ({ value: v, label: v })) },
+    { name: 'turmaId', label: 'Turma', type: 'select', half: true, options: classes.map(c => ({ value: c.id, label: c.name })) },
+    { name: 'alturaCm', label: 'Altura (cm)', type: 'number', half: true },
+    { name: 'pesoKg', label: 'Peso (kg)', type: 'number', half: true },
+    { name: 'telefone', label: 'Telefone do responsável', type: 'tel', half: true, placeholder: '(00) 00000-0000' },
+    { name: 'clubeFavorito', label: 'Clube que torce', half: true },
+    ...(currentUser?.role === 'admin' ? [
+      { name: 'valorMensalidade', label: 'Mensalidade (R$)', type: 'number' as const, half: true },
+      { name: 'diaVencimento', label: 'Dia do vencimento (1-28)', type: 'number' as const, half: true },
+    ] : []),
+    { name: 'sonho', label: 'Sonho do atleta' },
+  ];
+
+  const filtered = athletes.filter(a => {
     const matchSearch = a.name.toLowerCase().includes(search.toLowerCase());
     const matchPos = posFilter === 'Todos' || a.position === posFilter;
     return matchSearch && matchPos;
@@ -107,7 +137,7 @@ export default function Athletes() {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
             <img
-              src="/manus-storage/68db7c69-d5fd-4129-8544-30bbc90c29b1_1c2e822c.jpg"
+              src="/escudo-nadgol.svg"
               alt="Nadgol Academy Shield"
               style={{ width: '36px', height: 'auto', filter: 'drop-shadow(0 0 10px rgba(204,26,26,0.2))' }}
             />
@@ -122,9 +152,16 @@ export default function Athletes() {
             {filtered.length} atleta{filtered.length !== 1 ? 's' : ''} encontrado{filtered.length !== 1 ? 's' : ''}
           </p>
         </div>
-        <button className="nadgol-btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '6px', fontSize: '13px' }}>
-          <Plus size={16} /> Novo Atleta
-        </button>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+        {(currentUser?.role === 'admin' || currentUser?.role === 'coach') && (
+          <ReportButton label="Relatório PDF" disabled={!metricas.data?.length} onClick={() => relatorioEscola({ escola: currentUser?.escolaNome ?? 'Nadgol Academy', atletas: metricas.data ?? [] })} />
+        )}
+        {canEdit && (
+          <button onClick={() => setCreating(true)} className="nadgol-btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '6px', fontSize: '13px' }}>
+            <Plus size={16} /> Novo Atleta
+          </button>
+        )}
+        </div>
       </div>
 
       {/* Filters */}
@@ -164,6 +201,12 @@ export default function Athletes() {
         </div>
       </div>
 
+      {isLoading && <Loading label="Carregando atletas..." />}
+      {isError && <ErrorState onRetry={() => void refetch()} />}
+      {!isLoading && !isError && filtered.length === 0 && (
+        <Empty title={athletes.length ? 'Nenhum atleta nesse filtro' : 'Nenhum atleta cadastrado'} hint={athletes.length ? 'Ajuste a busca ou a posição.' : canEdit ? 'Use "Novo Atleta" para cadastrar o primeiro.' : undefined} />
+      )}
+
       {/* Athletes grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '14px' }}>
         {filtered.map((athlete, i) => (
@@ -173,7 +216,7 @@ export default function Athletes() {
             style={{
               padding: '16px', cursor: 'pointer',
               opacity: 0,
-              animation: `fadeInUp 0.4s cubic-bezier(0.23, 1, 0.32, 1) ${i * 50}ms forwards`,
+              animation: `fadeInUp 0.4s cubic-bezier(0.23, 1, 0.32, 1) ${Math.min(i, 12) * 50}ms forwards`,
             }}
             onClick={() => setSelected(athlete)}
           >
@@ -227,6 +270,21 @@ export default function Athletes() {
       </div>
 
       {selected && <AthleteModal athlete={selected} onClose={() => setSelected(null)} />}
+      {creating && (
+        <FormModal
+          title="Novo Atleta" fields={fields} submitLabel="Cadastrar" saving={createAthlete.isPending}
+          onClose={() => setCreating(false)}
+          onSubmit={v => {
+            const dia = v.diaVencimento ? Math.min(28, Math.max(1, Math.round(Number(v.diaVencimento)))) : undefined;
+            createAthlete.mutate({
+              nome: v.nome, dataNascimento: v.dataNascimento, posicao: v.posicao, peDominante: v.peDominante, turmaId: v.turmaId,
+              alturaCm: v.alturaCm ? Number(v.alturaCm) : undefined, pesoKg: v.pesoKg ? Number(v.pesoKg) : undefined,
+              telefone: v.telefone, clubeFavorito: v.clubeFavorito, sonho: v.sonho,
+              valorMensalidade: v.valorMensalidade ? Number(v.valorMensalidade) : undefined, diaVencimento: dia,
+            }, { onSuccess: () => setCreating(false) });
+          }}
+        />
+      )}
     </div>
   );
 }

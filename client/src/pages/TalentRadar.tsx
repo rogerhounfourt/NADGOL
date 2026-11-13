@@ -1,76 +1,42 @@
 import React, { useState } from "react";
+import { Loading, Empty, ErrorState } from "@/components/PageState";
+import { useAthleteMetrics } from "@/lib/queries";
 import { Star, TrendingUp, Zap, Target, Award, Trophy } from "lucide-react";
 
 interface Prospect {
-  id: number;
+  id: string;
   name: string;
   position: string;
   age: number;
   category: string;
   overall: number;
-  potential: number;
-  consistency: number;
-  evolution: number;
-  technicalHighlight: string;
-  physicalHighlight: string;
+  presenca: number;
+  nadscore: number | null;
+  evolution: number | null;
+  gols: number;
+  assistencias: number;
   badge: string;
 }
 
 const TalentRadar = () => {
   const [selectedTab, setSelectedTab] = useState("prospects");
 
-  const topProspects: Prospect[] = [
-    {
-      id: 1,
-      name: "João Silva",
-      position: "Atacante",
-      age: 14,
-      category: "Sub-15",
-      overall: 78,
-      potential: 92,
-      consistency: 88,
-      evolution: 15,
-      technicalHighlight: "Finalizações precisas",
-      physicalHighlight: "Velocidade explosiva",
-      badge: "🔥 Promissor",
-    },
-    {
-      id: 2,
-      name: "Carlos Santos",
-      position: "Meia",
-      age: 15,
-      category: "Sub-17",
-      overall: 76,
-      potential: 88,
-      consistency: 85,
-      evolution: 12,
-      technicalHighlight: "Visão de jogo",
-      physicalHighlight: "Resistência",
-      badge: "⚡ Destaque",
-    },
-    {
-      id: 3,
-      name: "Lucas Oliveira",
-      position: "Zagueiro",
-      age: 16,
-      category: "Sub-17",
-      overall: 74,
-      potential: 85,
-      consistency: 82,
-      evolution: 10,
-      technicalHighlight: "Posicionamento",
-      physicalHighlight: "Força",
-      badge: "🎯 Consistente",
-    },
-  ];
-
+  const q = useAthleteMetrics();
+  const lista = q.data ?? [];
+  const score = (m: (typeof lista)[number]) => m.overall + (m.nadscore ?? 0) * 3 + (m.vo2Evolucao ?? 0) * 0.2;
+  const topProspects: Prospect[] = [...lista].sort((x, y) => score(y) - score(x)).slice(0, 6).map((m, i) => ({
+    id: m.id, name: m.nome, position: m.posicao, age: m.idade, category: m.categoria, overall: m.overall,
+    presenca: m.presenca, nadscore: m.nadscore, evolution: m.vo2Evolucao, gols: m.gols, assistencias: m.assistencias,
+    badge: i === 0 ? "🔥 Promissor" : i === 1 ? "⚡ Destaque" : "🎯 Consistente",
+  }));
+  const top = (f: (m: (typeof lista)[number]) => number, min = 1) => lista.filter(m => f(m) >= min).length;
   const talentCategories = [
-    { id: 1, name: "Maior Evolução Física", count: 5, icon: <TrendingUp className="w-5 h-5" /> },
-    { id: 2, name: "Destaque Técnico", count: 3, icon: <Target className="w-5 h-5" /> },
-    { id: 3, name: "Destaque Ofensivo", count: 4, icon: <Zap className="w-5 h-5" /> },
-    { id: 4, name: "Destaque Defensivo", count: 2, icon: <Award className="w-5 h-5" /> },
-    { id: 5, name: "Atletas Promissores", count: 6, icon: <Star className="w-5 h-5" /> },
-    { id: 6, name: "Maior Consistência", count: 4, icon: <Trophy className="w-5 h-5" /> },
+    { id: 1, name: "Maior Evolução Física", count: top(m => m.vo2Evolucao ?? 0, 5), icon: <TrendingUp className="w-5 h-5" /> },
+    { id: 2, name: "Destaque Técnico (overall ≥ 70)", count: top(m => m.overall, 70), icon: <Target className="w-5 h-5" /> },
+    { id: 3, name: "Destaque Ofensivo (gols + assist.)", count: top(m => m.gols + m.assistencias, 3), icon: <Zap className="w-5 h-5" /> },
+    { id: 4, name: "NadScore ≥ 7", count: top(m => m.nadscore ?? 0, 7), icon: <Award className="w-5 h-5" /> },
+    { id: 5, name: "Atletas Promissores", count: Math.min(6, lista.length), icon: <Star className="w-5 h-5" /> },
+    { id: 6, name: "Maior Consistência (presença ≥ 80%)", count: top(m => m.presenca, 80), icon: <Trophy className="w-5 h-5" /> },
   ];
 
   return (
@@ -79,7 +45,7 @@ const TalentRadar = () => {
       <div style={{ marginBottom: "32px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
           <img
-            src="https://manus-storage.s3.us-west-2.amazonaws.com/nadgol-shield.jpg"
+            src="/escudo-nadgol.svg"
             alt="Nadgol Shield"
             style={{ width: "32px", height: "32px" }}
           />
@@ -129,6 +95,9 @@ const TalentRadar = () => {
       </div>
 
       {/* Top Prospects */}
+      {q.isLoading && <Loading />}
+      {q.isError && <ErrorState onRetry={() => q.refetch()} />}
+      {q.isSuccess && lista.length === 0 && <Empty title="Nenhum atleta" hint="Cadastre atletas para ver os talentos." />}
       {selectedTab === "prospects" && (
         <div>
           <h2 style={{ fontSize: "16px", fontWeight: "600", color: "#FFFFFF", marginBottom: "16px" }}>
@@ -203,31 +172,31 @@ const TalentRadar = () => {
                   </div>
                   <div style={{ background: "#0A0A0A", borderRadius: "6px", padding: "8px", textAlign: "center" }}>
                     <div style={{ fontSize: "16px", fontWeight: "700", color: "#00CC00" }}>
-                      {prospect.potential}
+                      {prospect.nadscore ?? "—"}
                     </div>
-                    <div style={{ fontSize: "10px", color: "#999999" }}>Potencial</div>
+                    <div style={{ fontSize: "10px", color: "#999999" }}>NadScore</div>
                   </div>
                   <div style={{ background: "#0A0A0A", borderRadius: "6px", padding: "8px", textAlign: "center" }}>
                     <div style={{ fontSize: "16px", fontWeight: "700", color: "#0099FF" }}>
-                      {prospect.consistency}%
+                      {prospect.presenca}%
                     </div>
-                    <div style={{ fontSize: "10px", color: "#999999" }}>Consistência</div>
+                    <div style={{ fontSize: "10px", color: "#999999" }}>Presença</div>
                   </div>
                   <div style={{ background: "#0A0A0A", borderRadius: "6px", padding: "8px", textAlign: "center" }}>
                     <div style={{ fontSize: "16px", fontWeight: "700", color: "#FFAA00" }}>
-                      +{prospect.evolution}%
+                      {prospect.evolution === null ? "—" : (prospect.evolution > 0 ? "+" : "") + prospect.evolution + "%"}
                     </div>
-                    <div style={{ fontSize: "10px", color: "#999999" }}>Evolução</div>
+                    <div style={{ fontSize: "10px", color: "#999999" }}>Evol. VO2</div>
                   </div>
                 </div>
 
                 {/* Highlights */}
                 <div style={{ borderTop: "1px solid #333333", paddingTop: "12px" }}>
                   <p style={{ fontSize: "11px", color: "#999999", margin: "0 0 4px 0" }}>
-                    <strong>Técnica:</strong> {prospect.technicalHighlight}
+                    <strong>Gols:</strong> {prospect.gols}
                   </p>
                   <p style={{ fontSize: "11px", color: "#999999", margin: 0 }}>
-                    <strong>Física:</strong> {prospect.physicalHighlight}
+                    <strong>Assistências:</strong> {prospect.assistencias}
                   </p>
                 </div>
               </div>

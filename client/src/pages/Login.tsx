@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { useApp } from '@/contexts/AppContext';
+import { useEffect, useState } from 'react';
+import { useApp, guardarConvite } from '@/contexts/AppContext';
 import { USERS, UserRole } from '@/lib/data';
+import { supabase } from '@/lib/supabase';
 import { Shield, User, Users, Dumbbell } from 'lucide-react';
 
 const ROLE_OPTIONS = [
@@ -10,10 +11,42 @@ const ROLE_OPTIONS = [
   { role: 'athlete' as UserRole, label: 'Atleta', desc: 'Seu desempenho e evolução', icon: User, color: '#EAB308' },
 ];
 
+type Modo = 'entrar' | 'cadastro' | 'recuperar';
+
+const campoStyle: React.CSSProperties = {
+  width: '100%', padding: '14px 16px', background: 'rgba(17,17,17,0.85)', backdropFilter: 'blur(10px)',
+  border: '2px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff',
+  fontFamily: 'DM Sans, sans-serif', fontSize: '14px', outline: 'none',
+};
+
 export default function Login() {
-  const { setCurrentUser, setShowIntro } = useApp();
+  const { setCurrentUser, setShowIntro, demo, signIn, signUp, recuperarSenha } = useApp();
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [hoveredRole, setHoveredRole] = useState<UserRole | null>(null);
+
+  // Login real
+  const [modo, setModo] = useState<Modo>('entrar');
+  const [nome, setNome] = useState('');
+  const [email, setEmail] = useState('');
+  const [senha, setSenha] = useState('');
+  const [enviando, setEnviando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
+  const [convite, setConvite] = useState<{ escola: string; papel: string } | null>(null);
+
+  // Link de convite: /convite/<token>
+  useEffect(() => {
+    if (demo) return;
+    const m = window.location.pathname.match(/^\/convite\/([0-9a-f-]{36})$/i);
+    if (!m) return;
+    guardarConvite(m[1]);
+    setModo('cadastro');
+    supabase.rpc('nadgol_ver_convite', { p_token: m[1] }).then(({ data }) => {
+      const c = Array.isArray(data) ? data[0] : null;
+      if (c) { setConvite({ escola: c.escola_nome, papel: c.papel }); if (c.nome) setNome(c.nome); }
+      else setErro('Este convite é inválido ou já expirou. Peça um novo à escolinha.');
+    });
+  }, [demo]);
 
   const handleLogin = () => {
     if (!selectedRole) return;
@@ -21,6 +54,29 @@ export default function Login() {
     setCurrentUser(user);
     setShowIntro(true);
   };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (enviando) return;
+    setErro(null); setAviso(null); setEnviando(true);
+    let msg: string | null = null;
+    if (modo === 'entrar') {
+      msg = await signIn(email, senha);
+      if (!msg) setShowIntro(true);
+    } else if (modo === 'cadastro') {
+      msg = await signUp(email, senha, nome);
+      if (!msg) setShowIntro(true);
+      else if (msg.startsWith('Cadastro criado')) { setAviso(msg); msg = null; setModo('entrar'); }
+    } else {
+      msg = await recuperarSenha(email);
+      if (!msg) setAviso('Se este e-mail tiver cadastro, enviamos o link para criar uma nova senha.');
+    }
+    setErro(msg);
+    setEnviando(false);
+  };
+
+  const podeEnviar = demo ? !!selectedRole : (!!email && (modo === 'recuperar' || senha.length > 0) && (modo !== 'cadastro' || nome.trim().length > 1) && !enviando);
+  const PAPEL_LABEL: Record<string, string> = { admin: 'Administrador', treinador: 'Treinador', responsavel: 'Responsável', atleta: 'Atleta' };
 
   return (
     <div style={{
@@ -56,7 +112,7 @@ export default function Login() {
         animation: 'pulse 4s ease-in-out infinite',
       }} />
 
-      <div style={{
+      <form onSubmit={demo ? e => e.preventDefault() : handleSubmit} style={{
         position: 'relative', zIndex: 1,
         width: '100%', maxWidth: '480px',
         animation: 'fadeInUp 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards',
@@ -65,7 +121,7 @@ export default function Login() {
         <div style={{ textAlign: 'center', marginBottom: '48px' }}>
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
             <img
-              src="/manus-storage/68db7c69-d5fd-4129-8544-30bbc90c29b1_1c2e822c.jpg"
+              src="/escudo-nadgol.svg"
               alt="Nadgol Academy Shield"
               style={{
                 width: '110px',
@@ -105,11 +161,16 @@ export default function Login() {
             opacity: 0,
             textShadow: '0 2px 8px rgba(0,0,0,0.7)',
           }}>
-            Selecione seu perfil de acesso
+            {demo ? 'Selecione seu perfil de acesso'
+              : convite ? `Convite · ${convite.escola} · ${PAPEL_LABEL[convite.papel] ?? ''}`
+              : modo === 'entrar' ? 'Acesse com seu e-mail e senha'
+              : modo === 'cadastro' ? 'Crie seu acesso'
+              : 'Recuperar senha'}
           </p>
         </div>
 
-        {/* Role Selection Cards */}
+        {/* Modo demonstração: seleção de perfil. Modo real: e-mail e senha. */}
+        {demo ? (
         <div style={{ display: 'grid', gap: '12px', marginBottom: '24px' }}>
           {ROLE_OPTIONS.map((option, idx) => {
             const Icon = option.icon;
@@ -198,46 +259,77 @@ export default function Login() {
             );
           })}
         </div>
+        ) : (
+        <div style={{ display: 'grid', gap: '12px', marginBottom: '24px', opacity: 0, animation: 'fadeInUp 0.5s cubic-bezier(0.23, 1, 0.32, 1) 300ms forwards' }}>
+          {modo === 'cadastro' && (
+            <input style={campoStyle} placeholder="Seu nome completo" autoComplete="name" value={nome} onChange={e => setNome(e.target.value)} required />
+          )}
+          <input style={campoStyle} type="email" placeholder="E-mail" autoComplete="email" inputMode="email" value={email} onChange={e => setEmail(e.target.value)} required />
+          {modo !== 'recuperar' && (
+            <input style={campoStyle} type="password" placeholder={modo === 'cadastro' ? 'Crie uma senha (mín. 8 caracteres)' : 'Senha'} autoComplete={modo === 'cadastro' ? 'new-password' : 'current-password'} minLength={modo === 'cadastro' ? 8 : undefined} value={senha} onChange={e => setSenha(e.target.value)} required />
+          )}
+          {erro && <p role="alert" style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: '#FCA5A5', background: 'rgba(204,26,26,0.15)', border: '1px solid rgba(204,26,26,0.4)', borderRadius: '8px', padding: '10px 12px' }}>{erro}</p>}
+          {aviso && <p role="status" style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: '#86EFAC', background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.35)', borderRadius: '8px', padding: '10px 12px' }}>{aviso}</p>}
+        </div>
+        )}
 
         {/* Login Button */}
         <button
-          onClick={handleLogin}
-          disabled={!selectedRole}
+          type={demo ? 'button' : 'submit'}
+          onClick={demo ? handleLogin : undefined}
+          disabled={!podeEnviar}
           style={{
             width: '100%',
             padding: '14px',
-            background: selectedRole ? '#CC1A1A' : 'rgba(26,26,26,0.7)',
-            color: selectedRole ? '#fff' : 'rgba(255,255,255,0.3)',
-            border: `1px solid ${selectedRole ? '#CC1A1A' : 'rgba(255,255,255,0.1)'}`,
+            background: podeEnviar ? '#CC1A1A' : 'rgba(26,26,26,0.7)',
+            color: podeEnviar ? '#fff' : 'rgba(255,255,255,0.3)',
+            border: `1px solid ${podeEnviar ? '#CC1A1A' : 'rgba(255,255,255,0.1)'}`,
             borderRadius: '8px',
             fontFamily: 'Barlow Condensed, sans-serif',
             fontSize: '14px',
             fontWeight: 700,
             letterSpacing: '2px',
             textTransform: 'uppercase',
-            cursor: selectedRole ? 'pointer' : 'not-allowed',
+            cursor: podeEnviar ? 'pointer' : 'not-allowed',
             transition: 'all 200ms cubic-bezier(0.23, 1, 0.32, 1)',
             opacity: 0,
             animation: 'fadeInUp 0.5s cubic-bezier(0.23, 1, 0.32, 1) 550ms forwards',
-            boxShadow: selectedRole ? '0 0 24px rgba(204,26,26,0.4), inset 0 0 20px rgba(255,255,255,0.1)' : 'none',
+            boxShadow: podeEnviar ? '0 0 24px rgba(204,26,26,0.4), inset 0 0 20px rgba(255,255,255,0.1)' : 'none',
             backdropFilter: 'blur(10px)',
             textShadow: '0 2px 4px rgba(0,0,0,0.5)',
           }}
           onMouseEnter={(e) => {
-            if (selectedRole) {
+            if (podeEnviar) {
               e.currentTarget.style.boxShadow = '0 0 32px rgba(204,26,26,0.6), inset 0 0 20px rgba(255,255,255,0.15)';
               e.currentTarget.style.transform = 'translateY(-2px)';
             }
           }}
           onMouseLeave={(e) => {
-            if (selectedRole) {
+            if (podeEnviar) {
               e.currentTarget.style.boxShadow = '0 0 24px rgba(204,26,26,0.4), inset 0 0 20px rgba(255,255,255,0.1)';
               e.currentTarget.style.transform = 'translateY(0)';
             }
           }}
         >
-          Acessar Plataforma
+          {demo ? 'Acessar Plataforma' : enviando ? 'Aguarde...' : modo === 'entrar' ? 'Entrar' : modo === 'cadastro' ? 'Criar acesso' : 'Enviar link'}
         </button>
+
+        {!demo && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px', opacity: 0, animation: 'fadeIn 0.6s cubic-bezier(0.23, 1, 0.32, 1) 600ms forwards' }}>
+            {(['entrar', 'cadastro', 'recuperar'] as Modo[]).filter(m => m !== modo).map(m => (
+              <button key={m} type="button" onClick={() => { setModo(m); setErro(null); setAviso(null); }}
+                style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.65)', fontFamily: 'DM Sans, sans-serif', fontSize: '12px', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: '3px', padding: '6px 0' }}>
+                {m === 'entrar' ? 'Já tenho acesso' : m === 'cadastro' ? 'Tenho um convite' : 'Esqueci a senha'}
+              </button>
+            ))}
+          </div>
+        )}
+        {demo && (
+          <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '11px', color: '#EAB308', textAlign: 'center', marginTop: '14px', letterSpacing: '1px', textTransform: 'uppercase' }}>
+            Modo demonstração · dados de exemplo
+          </p>
+        )}
+
 
         {/* Footer */}
         <p style={{
@@ -253,7 +345,7 @@ export default function Login() {
         }}>
           © 2026 Nadgol Academy · Todos os direitos reservados
         </p>
-      </div>
+      </form>
     </div>
   );
 }

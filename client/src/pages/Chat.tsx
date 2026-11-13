@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { CHAT_MESSAGES, ChatMessage } from '@/lib/data';
+import { Loading, ErrorState } from '@/components/PageState';
+import { useChat, useSendMessage } from '@/lib/queries';
 import { useApp } from '@/contexts/AppContext';
 import { Send, MessageSquare } from 'lucide-react';
 
@@ -18,8 +19,10 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 export default function Chat() {
-  const { currentUser } = useApp();
-  const [messages, setMessages] = useState<ChatMessage[]>(CHAT_MESSAGES);
+  const { currentUser, demo, escolas } = useApp();
+  const chat = useChat();
+  const enviar = useSendMessage();
+  const messages = chat.data ?? [];
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -28,18 +31,11 @@ export default function Chat() {
   }, [messages]);
 
   const send = () => {
-    if (!input.trim() || !currentUser) return;
-    const msg: ChatMessage = {
-      id: `m${Date.now()}`,
-      senderId: currentUser.id,
-      senderName: currentUser.name,
-      senderRole: currentUser.role,
-      message: input.trim(),
-      timestamp: new Date().toISOString(),
-      roomId: 'general',
-    };
-    setMessages(prev => [...prev, msg]);
+    const texto = input.trim();
+    if (!texto || !currentUser || enviar.isPending) return;
     setInput('');
+    if (demo) return;
+    enviar.mutate(texto, { onError: () => setInput(texto) });
   };
 
   return (
@@ -59,11 +55,12 @@ export default function Chat() {
         <div style={{ padding: '12px 16px', borderBottom: '1px solid #2A2A2A', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <MessageSquare size={14} color="#CC1A1A" />
           <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>
-            # geral — Nadgol Academy
+            # geral — {currentUser?.escolaNome}
           </span>
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {chat.isLoading ? <Loading /> : chat.isError ? <ErrorState onRetry={() => chat.refetch()} /> : messages.length === 0 && <p style={{ textAlign: 'center', fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: 'rgba(255,255,255,0.35)', marginTop: '24px' }}>Nenhuma mensagem ainda. Diga olá!</p>}
           {messages.map((msg, i) => {
             const isMe = msg.senderId === currentUser?.id;
             const color = ROLE_COLORS[msg.senderRole] || '#CC1A1A';
@@ -76,7 +73,7 @@ export default function Chat() {
                   alignItems: 'flex-start',
                   gap: '10px',
                   opacity: 0,
-                  animation: `fadeInUp 0.3s ease-out ${i * 30}ms forwards`,
+                  animation: `fadeInUp 0.3s ease-out ${Math.min(i, 10) * 30}ms forwards`,
                 }}
               >
                 <div style={{
@@ -119,6 +116,7 @@ export default function Chat() {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && send()}
+            maxLength={2000}
             placeholder="Digite sua mensagem..."
             style={{
               flex: 1, padding: '10px 14px',

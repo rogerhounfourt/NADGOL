@@ -1,21 +1,19 @@
 import React, { useState } from "react";
+import { Loading, Empty, ErrorState } from "@/components/PageState";
+import { useAthleteMetrics, usePhysicalEvals, useEvaluations, TIPO_AVALIACAO, type TipoAvaliacao } from "@/lib/queries";
 import { BarChart, Bar, LineChart, Line, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
 import { Search, Filter, Download, Eye, Star } from "lucide-react";
 
 interface Athlete {
-  id: number;
+  id: string;
   name: string;
   position: string;
   age: number;
-  height: string;
-  weight: string;
-  nadscore: number;
-  potential: number;
+  nadscore: number | string;
+  presenca: number;
   overall: number;
-  competitions: number;
   goals: number;
   assists: number;
-  image?: string;
 }
 
 const NadgolScout = () => {
@@ -23,66 +21,19 @@ const NadgolScout = () => {
   const [selectedAthlete, setSelectedAthlete] = useState<Athlete | null>(null);
   const [filterPosition, setFilterPosition] = useState("all");
 
-  const athletes: Athlete[] = [
-    {
-      id: 1,
-      name: "João Silva",
-      position: "Atacante",
-      age: 14,
-      height: "1.78m",
-      weight: "72kg",
-      nadscore: 8.2,
-      potential: 9.1,
-      overall: 78,
-      competitions: 12,
-      goals: 8,
-      assists: 3,
-    },
-    {
-      id: 2,
-      name: "Carlos Santos",
-      position: "Meia",
-      age: 15,
-      height: "1.75m",
-      weight: "68kg",
-      nadscore: 7.9,
-      potential: 8.8,
-      overall: 76,
-      competitions: 14,
-      goals: 2,
-      assists: 7,
-    },
-    {
-      id: 3,
-      name: "Lucas Oliveira",
-      position: "Zagueiro",
-      age: 16,
-      height: "1.85m",
-      weight: "78kg",
-      nadscore: 7.6,
-      potential: 8.5,
-      overall: 74,
-      competitions: 15,
-      goals: 1,
-      assists: 0,
-    },
-  ];
-
-  const performanceData = [
-    { week: "Sem 1", velocidade: 28, resistencia: 75, tecnica: 82 },
-    { week: "Sem 2", velocidade: 29, resistencia: 78, tecnica: 84 },
-    { week: "Sem 3", velocidade: 30, resistencia: 80, tecnica: 85 },
-    { week: "Sem 4", velocidade: 31, resistencia: 82, tecnica: 87 },
-  ];
-
-  const radarData = [
-    { attribute: "Velocidade", value: 85 },
-    { attribute: "Resistência", value: 82 },
-    { attribute: "Técnica", value: 87 },
-    { attribute: "Força", value: 78 },
-    { attribute: "Inteligência", value: 80 },
-    { attribute: "Liderança", value: 75 },
-  ];
+  const q = useAthleteMetrics();
+  const athletes: Athlete[] = (q.data ?? []).map(m => ({
+    id: m.id, name: m.nome, position: m.posicao, age: m.idade, nadscore: m.nadscore ?? "—", presenca: m.presenca,
+    overall: m.overall, goals: m.gols, assists: m.assistencias,
+  }));
+  const posicoes = Array.from(new Set(athletes.map(a => a.position).filter(p => p && p !== "—")));
+  const fisicas = usePhysicalEvals(selectedAthlete?.id ?? "");
+  const avals = useEvaluations(selectedAthlete?.id ?? "");
+  const performanceData = (fisicas.data ?? []).map(f => ({ week: f.data.slice(8, 10) + "/" + f.data.slice(5, 7), velocidade: f.velocidade, resistencia: f.resistencia, vo2: f.vo2 }));
+  const radarData = (Object.keys(TIPO_AVALIACAO) as TipoAvaliacao[]).map(t => ({
+    attribute: TIPO_AVALIACAO[t],
+    value: (avals.data ?? []).find(a => a.tipo === t)?.nota ?? 0,
+  }));
 
   const filteredAthletes = athletes.filter((athlete) => {
     const matchesSearch = athlete.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -96,7 +47,7 @@ const NadgolScout = () => {
       <div style={{ marginBottom: "32px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
           <img
-            src="https://manus-storage.s3.us-west-2.amazonaws.com/nadgol-shield.jpg"
+            src="/escudo-nadgol.svg"
             alt="Nadgol Shield"
             style={{ width: "32px", height: "32px" }}
           />
@@ -142,11 +93,13 @@ const NadgolScout = () => {
           }}
         >
           <option value="all">Todas as Posições</option>
-          <option value="Atacante">Atacante</option>
-          <option value="Meia">Meia</option>
-          <option value="Zagueiro">Zagueiro</option>
+          {posicoes.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
       </div>
+
+      {q.isLoading && <Loading />}
+      {q.isError && <ErrorState onRetry={() => q.refetch()} />}
+      {q.isSuccess && athletes.length === 0 && <Empty title="Nenhum atleta" hint="Cadastre atletas para vê-los aqui." />}
 
       {/* Athletes Grid */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "16px", marginBottom: "32px" }}>
@@ -204,9 +157,9 @@ const NadgolScout = () => {
               </div>
               <div style={{ background: "#0A0A0A", borderRadius: "6px", padding: "8px", textAlign: "center" }}>
                 <div style={{ fontSize: "14px", fontWeight: "600", color: "#CC1A1A" }}>
-                  {athlete.potential}
+                  {athlete.presenca}%
                 </div>
-                <div style={{ fontSize: "10px", color: "#999999" }}>Potencial</div>
+                <div style={{ fontSize: "10px", color: "#999999" }}>Presença</div>
               </div>
               <div style={{ background: "#0A0A0A", borderRadius: "6px", padding: "8px", textAlign: "center" }}>
                 <div style={{ fontSize: "14px", fontWeight: "600", color: "#FFFFFF" }}>
@@ -255,7 +208,7 @@ const NadgolScout = () => {
           {/* Performance Chart */}
           <div style={{ marginBottom: "32px" }}>
             <h3 style={{ fontSize: "16px", fontWeight: "600", color: "#FFFFFF", marginBottom: "16px" }}>
-              Evolução de Performance
+              Evolução Física (medições)
             </h3>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={performanceData}>
@@ -266,7 +219,7 @@ const NadgolScout = () => {
                 <Legend />
                 <Line type="monotone" dataKey="velocidade" stroke="#CC1A1A" strokeWidth={2} />
                 <Line type="monotone" dataKey="resistencia" stroke="#00CC00" strokeWidth={2} />
-                <Line type="monotone" dataKey="tecnica" stroke="#0099FF" strokeWidth={2} />
+                <Line type="monotone" dataKey="vo2" stroke="#0099FF" strokeWidth={2} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -274,7 +227,7 @@ const NadgolScout = () => {
           {/* Radar Chart */}
           <div style={{ marginBottom: "32px" }}>
             <h3 style={{ fontSize: "16px", fontWeight: "600", color: "#FFFFFF", marginBottom: "16px" }}>
-              Mapa de Atributos
+              Avaliações (última nota de cada tipo, 0–100)
             </h3>
             <ResponsiveContainer width="100%" height={300}>
               <RadarChart data={radarData}>

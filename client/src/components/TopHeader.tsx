@@ -1,6 +1,6 @@
 import { Bell, Menu, Search } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
-import { NOTIFICATIONS } from '@/lib/data';
+import { useNotifications } from '@/lib/queries';
 
 const SECTION_TITLES: Record<string, string> = {
   dashboard: 'Dashboard',
@@ -14,14 +14,26 @@ const SECTION_TITLES: Record<string, string> = {
   ranking: 'Ranking',
   notifications: 'Notificações',
   chat: 'Chat Interno',
+  access: 'Acessos',
   settings: 'Configurações',
+  nadscore: 'NadScore',
+  journey: 'Jornada',
+  scout: 'Scout',
+  intelligence: 'Inteligência',
+  mentality: 'Mentalidade',
+  radar: 'Radar',
+  tactical: 'Quadro Tático',
+  daily: 'Performance Diária',
+  mindgame: 'Mind Game',
+  profile: 'Perfil do Atleta',
 };
 
 export default function TopHeader() {
   const { currentUser, activeSection, setActiveSection, sidebarOpen, setSidebarOpen } = useApp();
+  const notificacoes = useNotifications();
   if (!currentUser) return null;
 
-  const unreadCount = NOTIFICATIONS.filter(n => !n.read).length;
+  const unreadCount = (notificacoes.data ?? []).filter(n => !n.read).length;
 
   return (
     <header style={{
@@ -46,7 +58,7 @@ export default function TopHeader() {
         </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <img
-            src="/manus-storage/68db7c69-d5fd-4129-8544-30bbc90c29b1_1c2e822c.jpg"
+            src="/escudo-nadgol.svg"
             alt="Nadgol Academy Shield"
             style={{ width: '36px', height: 'auto', filter: 'drop-shadow(0 0 10px rgba(204,26,26,0.2))' }}
           />

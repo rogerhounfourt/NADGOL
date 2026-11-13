@@ -1,9 +1,12 @@
-import { useState } from 'react';
-import { ATHLETES, CLASSES } from '@/lib/data';
-import { CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useApp } from '@/contexts/AppContext';
+import { useAthletes, useClasses, useAttendance, useSaveAttendance, type AttStatus, type AttPerf } from '@/lib/queries';
+import { Loading, Empty, ErrorState } from '@/components/PageState';
+import { CheckCircle2, XCircle, Clock, Save } from 'lucide-react';
 
-type Status = 'present' | 'absent' | 'late' | null;
-type Performance = 'highlight' | 'great' | 'evolving' | 'needs_work' | null;
+type Status = AttStatus;
+type Performance = AttPerf;
+const hoje = () => new Date().toLocaleDateString('en-CA');
 
 const PERF_OPTIONS = [
   { key: 'highlight' as Performance, icon: '🔥', label: 'Destaque', color: '#CC1A1A' },
@@ -13,17 +16,34 @@ const PERF_OPTIONS = [
 ];
 
 export default function Attendance() {
-  const [selectedClass, setSelectedClass] = useState(CLASSES[0].id);
+  const { currentUser } = useApp();
+  const canEdit = currentUser?.role === 'admin' || currentUser?.role === 'coach';
+  const { data: CLASSES = [], isLoading, isError, refetch } = useClasses();
+  const { data: ATHLETES = [] } = useAthletes();
+  const [chosenClass, setSelectedClass] = useState('');
+  const [date, setDate] = useState(hoje);
   const [records, setRecords] = useState<Record<string, { status: Status; performance: Performance }>>({});
+  const [dirty, setDirty] = useState(false);
 
-  const cls = CLASSES.find(c => c.id === selectedClass)!;
-  const athletes = ATHLETES.filter(a => cls.athletes.includes(a.id));
+  const cls = CLASSES.find(c => c.id === chosenClass) ?? CLASSES[0];
+  const selectedClass = cls?.id ?? '';
+  const athletes = cls ? ATHLETES.filter(a => cls.athletes.includes(a.id)) : [];
+
+  // Carrega o que já foi registrado para esta turma nesta data
+  const saved = useAttendance(selectedClass, date);
+  const save = useSaveAttendance();
+  useEffect(() => { setRecords({}); setDirty(false); }, [selectedClass, date]);
+  useEffect(() => { if (saved.data) { setRecords(saved.data); setDirty(false); } }, [saved.data]);
 
   const setStatus = (athleteId: string, status: Status) => {
-    setRecords(prev => ({ ...prev, [athleteId]: { ...prev[athleteId], status } }));
+    if (!canEdit) return;
+    setDirty(true);
+    setRecords(prev => ({ ...prev, [athleteId]: { status, performance: prev[athleteId]?.performance ?? null } }));
   };
   const setPerf = (athleteId: string, performance: Performance) => {
-    setRecords(prev => ({ ...prev, [athleteId]: { ...prev[athleteId], performance } }));
+    if (!canEdit) return;
+    setDirty(true);
+    setRecords(prev => ({ ...prev, [athleteId]: { status: prev[athleteId]?.status ?? null, performance } }));
   };
 
   const presentCount = Object.values(records).filter(r => r.status === 'present').length;
@@ -40,7 +60,7 @@ export default function Attendance() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '8px' }}>
           <img
-            src="/manus-storage/68db7c69-d5fd-4129-8544-30bbc90c29b1_1c2e822c.jpg"
+            src="/escudo-nadgol.svg"
             alt="Nadgol Academy Shield"
             style={{ width: '44px', height: 'auto', filter: 'drop-shadow(0 0 16px rgba(204,26,26,0.3))' }}
           />
@@ -49,7 +69,7 @@ export default function Attendance() {
               Lista de Presença
             </h1>
             <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.4)', letterSpacing: '1px' }}>
-              {cls.name} · {athletes.length} atletas
+              {cls ? `${cls.name} · ${athletes.length} atleta${athletes.length === 1 ? '' : 's'}` : 'Nenhuma turma'}
             </p>
           </div>
         </div>
@@ -111,6 +131,30 @@ export default function Attendance() {
         </div>
       </div>
 
+      {/* Data do treino e salvar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', marginBottom: '16px' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+          Data do treino
+          <input type="date" value={date} max={hoje()} onChange={e => e.target.value && setDate(e.target.value)}
+            style={{ padding: '9px 12px', background: '#111111', border: '1px solid #1E1E1E', borderRadius: '6px', color: '#fff', fontFamily: 'DM Sans, sans-serif', fontSize: '13px', outline: 'none', colorScheme: 'dark' }} />
+        </label>
+        {canEdit && cls && athletes.length > 0 && (
+          <button
+            onClick={() => save.mutate({ turmaId: selectedClass, data: date, registros: records }, { onSuccess: () => setDirty(false) })}
+            disabled={save.isPending || !dirty}
+            className="nadgol-btn-primary"
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', borderRadius: '6px', fontSize: '13px', border: 'none', cursor: save.isPending || !dirty ? 'default' : 'pointer', opacity: save.isPending || !dirty ? 0.5 : 1 }}
+          >
+            <Save size={16} /> {save.isPending ? 'Salvando...' : dirty ? 'Salvar presença' : 'Presença salva'}
+          </button>
+        )}
+      </div>
+
+      {(isLoading || saved.isLoading) && <Loading />}
+      {isError && <ErrorState onRetry={() => void refetch()} />}
+      {!isLoading && !isError && !cls && <Empty title="Nenhuma turma criada" hint="Crie uma turma e vincule atletas para lançar a presença." />}
+      {!isLoading && cls && athletes.length === 0 && <Empty title="Turma sem atletas" hint="Vincule atletas a esta turma no cadastro do atleta." />}
+
       {/* Athletes List */}
       <div style={{ display: 'grid', gap: '12px' }}>
         {athletes.map((athlete, idx) => {
@@ -127,7 +171,7 @@ export default function Attendance() {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 opacity: 0,
-                animation: `fadeInUp 0.5s cubic-bezier(0.23, 1, 0.32, 1) ${100 + idx * 30}ms forwards`,
+                animation: `fadeInUp 0.5s cubic-bezier(0.23, 1, 0.32, 1) ${100 + Math.min(idx, 12) * 30}ms forwards`,
                 transition: 'all 200ms ease-out',
               }}
               onMouseEnter={(e) => {

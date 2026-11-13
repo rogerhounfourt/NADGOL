@@ -1,3 +1,5 @@
+import { lazy, Suspense, useEffect, useState } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -7,58 +9,46 @@ import IntroScreen from "./components/IntroScreen";
 import Sidebar from "./components/Sidebar";
 import TopHeader from "./components/TopHeader";
 import MobileNav from "./components/MobileNav";
+import { FullScreenLoading, Loading } from "./components/PageState";
 import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import Athletes from "./pages/Athletes";
-import Classes from "./pages/Classes";
-import Attendance from "./pages/Attendance";
-import Performance from "./pages/Performance";
-import Competitions from "./pages/Competitions";
-import Financial from "./pages/Financial";
-import Evolution from "./pages/Evolution";
-import Ranking from "./pages/Ranking";
-import Notifications from "./pages/Notifications";
-import Chat from "./pages/Chat";
-import Settings from "./pages/Settings";
-import NadScore from "./pages/NadScore";
-import AthleteJourney from "./pages/AthleteJourney";
-import NadgolScout from "./pages/NadgolScout";
-import NadgolIntelligence from "./pages/NadgolIntelligence";
-import MentalityDiscipline from "./pages/MentalityDiscipline";
-import TalentRadar from "./pages/TalentRadar";
-import TacticalBoard from "./pages/TacticalBoard";
-import DailyPerformance from "./pages/DailyPerformance";
-import MindGame from "./pages/MindGame";
-import AthleteProfile from "./pages/AthleteProfile";
-import { useEffect, useState } from "react";
+import SemVinculo from "./pages/SemVinculo";
+import { canAccess, SECOES_CONECTADAS } from "./lib/permissions";
 
-const PAGE_MAP: Record<string, React.ComponentType> = {
-  dashboard: Dashboard,
-  athletes: Athletes,
-  classes: Classes,
-  attendance: Attendance,
-  performance: Performance,
-  competitions: Competitions,
-  financial: Financial,
-  evolution: Evolution,
-  ranking: Ranking,
-  nadscore: NadScore,
-  journey: AthleteJourney,
-  scout: NadgolScout,
-  intelligence: NadgolIntelligence,
-  mentality: MentalityDiscipline,
-  radar: TalentRadar,
-  tactical: TacticalBoard,
-  daily: DailyPerformance,
-  mindgame: MindGame,
-  profile: AthleteProfile,
-  notifications: Notifications,
-  chat: Chat,
-  settings: Settings,
+// Cada tela é baixada só quando é aberta (carregamento inicial bem menor)
+const PAGE_MAP: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
+  dashboard: lazy(() => import("./pages/Dashboard")),
+  athletes: lazy(() => import("./pages/Athletes")),
+  classes: lazy(() => import("./pages/Classes")),
+  attendance: lazy(() => import("./pages/Attendance")),
+  performance: lazy(() => import("./pages/Performance")),
+  competitions: lazy(() => import("./pages/Competitions")),
+  financial: lazy(() => import("./pages/Financial")),
+  evolution: lazy(() => import("./pages/Evolution")),
+  ranking: lazy(() => import("./pages/Ranking")),
+  nadscore: lazy(() => import("./pages/NadScore")),
+  journey: lazy(() => import("./pages/AthleteJourney")),
+  scout: lazy(() => import("./pages/NadgolScout")),
+  intelligence: lazy(() => import("./pages/NadgolIntelligence")),
+  mentality: lazy(() => import("./pages/MentalityDiscipline")),
+  radar: lazy(() => import("./pages/TalentRadar")),
+  tactical: lazy(() => import("./pages/TacticalBoard")),
+  daily: lazy(() => import("./pages/DailyPerformance")),
+  mindgame: lazy(() => import("./pages/MindGame")),
+  profile: lazy(() => import("./pages/AthleteProfile")),
+  notifications: lazy(() => import("./pages/Notifications")),
+  chat: lazy(() => import("./pages/Chat")),
+  access: lazy(() => import("./pages/Access")),
+  settings: lazy(() => import("./pages/Settings")),
 };
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { staleTime: 60_000, gcTime: 10 * 60_000, retry: 1, refetchOnWindowFocus: false },
+  },
+});
+
 function AppContent() {
-  const { currentUser, isAuthenticated, showIntro, setShowIntro, activeSection, sidebarOpen } = useApp();
+  const { currentUser, isAuthenticated, loading, demo, semVinculo, showIntro, setShowIntro, activeSection, setActiveSection, sidebarOpen } = useApp();
   const [introComplete, setIntroComplete] = useState(false);
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
 
@@ -72,9 +62,15 @@ function AppContent() {
     if (!showIntro) setIntroComplete(false);
   }, [showIntro]);
 
-  if (!isAuthenticated) {
-    return <Login />;
-  }
+  // Guarda de rota: URL desconhecida ou fora do perfil volta para o dashboard
+  const permitido = !!currentUser && !!PAGE_MAP[activeSection] && canAccess(currentUser.role, activeSection);
+  useEffect(() => {
+    if (currentUser && !permitido && activeSection !== 'dashboard') setActiveSection('dashboard');
+  }, [currentUser, permitido, activeSection, setActiveSection]);
+
+  if (loading) return <FullScreenLoading />;
+  if (semVinculo) return <SemVinculo />;
+  if (!isAuthenticated) return <Login />;
 
   if (showIntro && !introComplete) {
     return (
@@ -86,8 +82,9 @@ function AppContent() {
     );
   }
 
-  const PageComponent = PAGE_MAP[activeSection] || Dashboard;
+  const PageComponent = permitido ? PAGE_MAP[activeSection] : PAGE_MAP.dashboard;
   const sidebarWidth = isDesktop ? (sidebarOpen ? 240 : 64) : 0;
+  const dadosDeExemplo = !demo && !SECOES_CONECTADAS.has(permitido ? activeSection : 'dashboard');
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#080808' }}>
@@ -100,8 +97,17 @@ function AppContent() {
         minWidth: 0,
       }}>
         <TopHeader />
-        <main style={{ flex: 1, overflowY: 'auto', paddingBottom: isDesktop ? '0' : '72px' }}>
-          <PageComponent />
+        {dadosDeExemplo && (
+          <div role="note" style={{ padding: '8px 24px', background: 'rgba(234,179,8,0.08)', borderBottom: '1px solid rgba(234,179,8,0.25)', fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: '#EAB308', letterSpacing: '0.5px' }}>
+            Esta tela ainda mostra dados de exemplo. A ligação com os dados reais da escolinha está em construção.
+          </div>
+        )}
+        <main style={{ flex: 1, overflowY: 'auto', paddingBottom: isDesktop ? '0' : '104px' }}>
+          <ErrorBoundary key={activeSection}>
+            <Suspense fallback={<div style={{ padding: '24px' }}><Loading /></div>}>
+              <PageComponent />
+            </Suspense>
+          </ErrorBoundary>
         </main>
       </div>
       <MobileNav />
@@ -113,12 +119,14 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="dark">
-        <AppProvider>
-          <TooltipProvider>
-            <Toaster />
-            <AppContent />
-          </TooltipProvider>
-        </AppProvider>
+        <QueryClientProvider client={queryClient}>
+          <AppProvider>
+            <TooltipProvider>
+              <Toaster />
+              <AppContent />
+            </TooltipProvider>
+          </AppProvider>
+        </QueryClientProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );
