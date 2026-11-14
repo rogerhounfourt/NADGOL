@@ -12,6 +12,7 @@ import MobileNav from "./components/MobileNav";
 import { FullScreenLoading, Loading } from "./components/PageState";
 import Login from "./pages/Login";
 import SemVinculo from "./pages/SemVinculo";
+import TrocarSenha from "./pages/TrocarSenha";
 import { canAccess, SECOES_CONECTADAS } from "./lib/permissions";
 
 // Cada tela é baixada só quando é aberta (carregamento inicial bem menor)
@@ -48,7 +49,7 @@ const queryClient = new QueryClient({
 });
 
 function AppContent() {
-  const { currentUser, isAuthenticated, loading, demo, semVinculo, showIntro, setShowIntro, activeSection, setActiveSection, sidebarOpen } = useApp();
+  const { currentUser, isAuthenticated, loading, demo, precisaTrocarSenha, semVinculo, showIntro, setShowIntro, activeSection, setActiveSection, sidebarOpen } = useApp();
   const [introComplete, setIntroComplete] = useState(false);
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
 
@@ -68,6 +69,7 @@ function AppContent() {
     if (currentUser && !permitido && activeSection !== 'dashboard') setActiveSection('dashboard');
   }, [currentUser, permitido, activeSection, setActiveSection]);
 
+  if (!demo && precisaTrocarSenha) return <TrocarSenha />;
   if (loading) return <FullScreenLoading />;
   if (semVinculo) return <SemVinculo />;
   if (!isAuthenticated) return <Login />;

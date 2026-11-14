@@ -3,6 +3,7 @@ import { useLocation } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
 import { User, UserRole } from '@/lib/data';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { senhaForte } from '@/lib/senha';
 
 const PAPEL_PARA_ROLE: Record<string, UserRole> = {
   admin: 'admin', treinador: 'coach', responsavel: 'parent', atleta: 'athlete',
@@ -32,6 +33,9 @@ interface AppContextType {
   recuperarSenha: (email: string) => Promise<string | null>;
   aceitarConvite: (token: string) => Promise<string | null>;
   signOut: () => Promise<void>;
+  /** Conta criada com senha provisória: precisa definir uma senha própria antes de usar o app */
+  precisaTrocarSenha: boolean;
+  trocarSenha: (nova: string) => Promise<string | null>;
   showIntro: boolean;
   setShowIntro: (v: boolean) => void;
   activeSection: string;
@@ -66,6 +70,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try { return localStorage.getItem(ESCOLA_KEY); } catch { return null; }
   });
   const [demoUser, setDemoUser] = useState<User | null>(null);
+  const [precisaTrocarSenha, setPrecisaTrocarSenha] = useState(false);
   const [loading, setLoading] = useState(!demo);
   const [showIntro, setShowIntro] = useState(false);
   const uidRef = useRef<string | null>(null);
@@ -82,6 +87,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(({ data }) => {
       uidRef.current = data.session?.user.id ?? null;
       setAuthUserId(data.session?.user.id ?? null);
+      setPrecisaTrocarSenha(data.session?.user.user_metadata?.must_change_password === true);
       if (!data.session) setLoading(false);
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_evt, session) => {
@@ -90,6 +96,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (uid && uid !== uidRef.current) setLoading(true);
       uidRef.current = uid;
       setAuthUserId(uid);
+      setPrecisaTrocarSenha(session?.user.user_metadata?.must_change_password === true);
       if (!session) { setPerfil(null); setEscolas([]); setLoading(false); }
     });
     return () => sub.subscription.unsubscribe();
@@ -162,6 +169,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return error ? traduzErro(error.message) : null;
   }, []);
 
+  const trocarSenha = useCallback(async (nova: string) => {
+    if (!senhaForte(nova)) return 'A senha precisa ter 8 ou mais caracteres, com letra maiúscula, minúscula e número.';
+    const { error } = await supabase.auth.updateUser({ password: nova, data: { must_change_password: false } });
+    if (error) {
+      const m = error.message.toLowerCase();
+      if (m.includes('different') || m.includes('same')) return 'A nova senha precisa ser diferente da provisória.';
+      return traduzErro(error.message);
+    }
+    setPrecisaTrocarSenha(false);
+    return null;
+  }, []);
+
   const signUp = useCallback(async (email: string, senha: string, nome: string) => {
     if (senha.length < 8) return 'A senha precisa ter pelo menos 8 caracteres.';
     const { data, error } = await supabase.auth.signUp({ email: email.trim(), password: senha, options: { data: { full_name: nome.trim() } } });
@@ -204,6 +223,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     semVinculo: !demo && !!authUserId && !loading && !currentUser,
     escolas, trocarEscola, recarregarEscolas,
     signIn, signUp, recuperarSenha, aceitarConvite, signOut,
+    precisaTrocarSenha, trocarSenha,
     showIntro, setShowIntro,
     activeSection, setActiveSection,
     sidebarOpen, setSidebarOpen,
