@@ -21,6 +21,13 @@ class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
+  componentDidCatch(error: Error) {
+    // Arquivo de uma versão antiga que saiu do ar: recarrega para pegar a versão nova.
+    if (/dynamically imported module|Importing a module script failed|error loading dynamically/i.test(String(error?.message))) {
+      (window as any).__nadgolRecarregar?.();
+    }
+  }
+
   render() {
     if (this.state.hasError) {
       return (
