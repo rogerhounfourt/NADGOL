@@ -4,7 +4,7 @@ import { reduzirEscudo } from "@/lib/foto";
 import { useApp } from "@/contexts/AppContext";
 import FormModal from "@/components/FormModal";
 import { Loading, Empty, ErrorState } from "@/components/PageState";
-import { useAthletes, useJourney, useCreateJourneyEvent, type TipoJornada, type Vinculo } from "@/lib/queries";
+import { useAthletes, useJourney, useCreateJourneyEvent, useUpdateJourneyEvent, useDeleteJourneyEvent, type TipoJornada, type Vinculo, type EventoJornada } from "@/lib/queries";
 import { Trophy, Zap, TrendingUp, Award, Calendar, Shield } from "lucide-react";
 
 interface JourneyEvent {
@@ -45,11 +45,12 @@ function periodo(v: Vinculo | undefined, ini: string, fim?: string) {
   return `${rotulo} de ${porMes ? `${mes(ini)} de ${ai}` : `${dia(ini)} de ${ai}`} a ${porMes ? `${mes(fim)} de ${af}` : `${dia(fim)} de ${af}`}`;
 }
 
-function EscudoPicker({ value, onChange }: { value: Blob | null; onChange: (b: Blob | null) => void }) {
+function EscudoPicker({ value, atual, onChange }: { value: Blob | null | undefined; atual?: string; onChange: (b: Blob | null | undefined) => void }) {
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
-  const url = useMemo(() => (value ? URL.createObjectURL(value) : null), [value]);
-  useEffect(() => () => { if (url) URL.revokeObjectURL(url); }, [url]);
+  const preview = useMemo(() => (value instanceof Blob ? URL.createObjectURL(value) : null), [value]);
+  useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
+  const exibido = preview ?? (value === null ? null : atual ?? null);
   async function escolher(f?: File) {
     if (!f) return;
     setBusy(true);
@@ -60,12 +61,12 @@ function EscudoPicker({ value, onChange }: { value: Blob | null; onChange: (b: B
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
       <div style={{ width: 64, height: 64, borderRadius: 10, background: "#111", border: "1px solid #2A2A2A", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", fontSize: 28 }}>
-        {url ? <img src={url} alt="Escudo" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} /> : "🛡️"}
+        {exibido ? <img src={exibido} alt="Escudo" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} /> : "🛡️"}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button type="button" disabled={busy} onClick={() => input.current?.click()} style={{ ...btn, borderColor: "#CC1A1A" }}>{busy ? "Preparando…" : value ? "Trocar escudo" : "Adicionar escudo do clube"}</button>
-          {value && <button type="button" onClick={() => onChange(null)} style={btn}>Remover</button>}
+          <button type="button" disabled={busy} onClick={() => input.current?.click()} style={{ ...btn, borderColor: "#CC1A1A" }}>{busy ? "Preparando…" : exibido ? "Trocar escudo" : "Adicionar escudo do clube"}</button>
+          {exibido && <button type="button" onClick={() => onChange(atual ? null : undefined)} style={btn}>Remover</button>}
         </div>
         <span style={{ fontSize: 11, color: "#888" }}>Opcional. Use o escudo em PNG ou JPG (de preferência com fundo transparente).</span>
       </div>
@@ -81,7 +82,8 @@ const AthleteJourney = () => {
   const [atletaId, setAtletaId] = useState("");
   const [novo, setNovo] = useState(false);
   const [novoClube, setNovoClube] = useState(false);
-  const [escudo, setEscudo] = useState<Blob | null>(null);
+  const [escudo, setEscudo] = useState<Blob | null | undefined>(undefined);
+  const [editando, setEditando] = useState<EventoJornada | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<JourneyEvent | null>(null);
   useEffect(() => {
     if (atletaId || lista.length === 0) return;
@@ -89,6 +91,9 @@ const AthleteJourney = () => {
   }, [lista, atletaId, currentUser?.atletaId]);
   const q = useJourney(atletaId);
   const criar = useCreateJourneyEvent();
+  const atualizar = useUpdateJourneyEvent();
+  const excluir = useDeleteJourneyEvent();
+  const fechar = () => { setNovo(false); setNovoClube(false); setEditando(null); setEscudo(undefined); };
   const podeEditar = demo || currentUser?.role === "admin" || currentUser?.role === "coach";
   const atleta = lista.find(a => a.id === atletaId);
 
@@ -245,6 +250,14 @@ const AthleteJourney = () => {
                   {event.vinculo && <span style={{ fontSize: "11px", background: "#2A2A2A", color: "#fff", padding: "4px 8px", borderRadius: "4px", textTransform: "uppercase", fontWeight: 600 }}>{event.vinculo === "teste" ? "Teste" : event.vinculo === "aprovado" ? "Aprovado" : "Temporada"}</span>}
                   {event.tempo && !event.linha?.includes(" de ") && <span style={{ fontSize: "11px", background: "#2A2A2A", color: "#ccc", padding: "4px 8px", borderRadius: "4px", fontWeight: 600 }}>⏱ {event.tempo}</span>}
                 </div>
+                {podeEditar && (
+                  <div style={{ marginTop: "10px", display: "flex", gap: "8px" }} onClick={e => e.stopPropagation()}>
+                    <button type="button" onClick={() => { const ev = (q.data ?? []).find(x => x.id === event.id); if (ev) { setEscudo(undefined); setEditando(ev); } }}
+                      style={{ padding: "6px 12px", borderRadius: "6px", fontSize: "12px", border: "1px solid #2A2A2A", background: "#111", color: "#fff", cursor: "pointer" }}>Editar</button>
+                    <button type="button" disabled={excluir.isPending} onClick={() => { if (window.confirm(`Excluir "${event.title}" da jornada? Isso não pode ser desfeito.`)) excluir.mutate({ id: event.id, escudo: event.escudo }); }}
+                      style={{ padding: "6px 12px", borderRadius: "6px", fontSize: "12px", border: "1px solid #7f1d1d", background: "transparent", color: "#f87171", cursor: "pointer" }}>Excluir</button>
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -279,10 +292,12 @@ const AthleteJourney = () => {
         </div>
       </div>
 
-      {novoClube && atleta && (
+      {(novoClube || editando?.tipo === "clube") && atleta && (
         <FormModal
-          title={`Passagem por clube · ${atleta.name.split(" ")[0]}`} submitLabel="Adicionar" saving={criar.isPending}
-          topSlot={<EscudoPicker value={escudo} onChange={setEscudo} />}
+          key={editando?.id ?? "novo-clube"}
+          title={`${editando ? "Editar passagem" : "Passagem por clube"} · ${atleta.name.split(" ")[0]}`} submitLabel={editando ? "Salvar" : "Adicionar"} saving={criar.isPending || atualizar.isPending}
+          initial={editando ? { clube: editando.titulo, vinculo: editando.vinculo ?? "teste", data: editando.data, dataFim: editando.dataFim ?? "", descricao: editando.descricao } : undefined}
+          topSlot={<EscudoPicker value={escudo} atual={editando?.escudo} onChange={setEscudo} />}
           fields={[
             { name: "clube", label: "Clube", required: true, placeholder: "Ex.: Flamengo, Bahia, Vitória" },
             { name: "vinculo", label: "Situação", type: "select", required: true, options: [
@@ -293,15 +308,21 @@ const AthleteJourney = () => {
           ]}
           onSubmit={v => {
             if (v.dataFim && v.dataFim < v.data) { toast.error("A data de fim não pode ser antes do início."); return; }
-            criar.mutate({ atletaId: atleta.id, data: v.data, dataFim: v.dataFim || undefined, tipo: "clube", titulo: v.clube, clube: v.clube, vinculo: v.vinculo as Vinculo, escudo: escudo ?? undefined, descricao: v.descricao }, { onSuccess: () => { setNovoClube(false); setEscudo(null); } });
+            if (editando) {
+              atualizar.mutate({ id: editando.id, atletaId: atleta.id, data: v.data, dataFim: v.dataFim || undefined, tipo: "clube", titulo: v.clube, vinculo: v.vinculo as Vinculo, descricao: v.descricao, escudo: escudo === undefined ? undefined : escudo, escudoAnterior: editando.escudo }, { onSuccess: fechar });
+            } else {
+              criar.mutate({ atletaId: atleta.id, data: v.data, dataFim: v.dataFim || undefined, tipo: "clube", titulo: v.clube, clube: v.clube, vinculo: v.vinculo as Vinculo, escudo: escudo ?? undefined, descricao: v.descricao }, { onSuccess: fechar });
+            }
           }}
-          onClose={() => { setNovoClube(false); setEscudo(null); }}
+          onClose={fechar}
         />
       )}
 
-      {novo && atleta && (
+      {(novo || (editando && editando.tipo !== "clube")) && atleta && (
         <FormModal
-          title={`Novo evento · ${atleta.name.split(" ")[0]}`} submitLabel="Adicionar" saving={criar.isPending}
+          key={editando?.id ?? "novo-evento"}
+          title={`${editando ? "Editar evento" : "Novo evento"} · ${atleta.name.split(" ")[0]}`} submitLabel={editando ? "Salvar" : "Adicionar"} saving={criar.isPending || atualizar.isPending}
+          initial={editando ? { titulo: editando.titulo, tipo: editando.tipo, data: editando.data, descricao: editando.descricao } : undefined}
           fields={[
             { name: "titulo", label: "Título", required: true, placeholder: "Ex.: Primeiro gol" },
             { name: "tipo", label: "Tipo", type: "select", required: true, half: true, options: [
@@ -310,8 +331,11 @@ const AthleteJourney = () => {
             { name: "data", label: "Data", type: "date", required: true, half: true },
             { name: "descricao", label: "Descrição (opcional)" },
           ]}
-          onSubmit={v => criar.mutate({ atletaId: atleta.id, data: v.data, tipo: v.tipo as TipoJornada, titulo: v.titulo, descricao: v.descricao }, { onSuccess: () => setNovo(false) })}
-          onClose={() => setNovo(false)}
+          onSubmit={v => {
+            if (editando) atualizar.mutate({ id: editando.id, atletaId: atleta.id, data: v.data, tipo: v.tipo as TipoJornada, titulo: v.titulo, descricao: v.descricao }, { onSuccess: fechar });
+            else criar.mutate({ atletaId: atleta.id, data: v.data, tipo: v.tipo as TipoJornada, titulo: v.titulo, descricao: v.descricao }, { onSuccess: fechar });
+          }}
+          onClose={fechar}
         />
       )}
     </div>

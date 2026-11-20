@@ -1006,6 +1006,44 @@ export function useCreateJourneyEvent() {
   });
 }
 
+export function useUpdateJourneyEvent() {
+  const { escolaId, demo } = useEscola();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { id: string; atletaId: string; data: string; dataFim?: string; tipo: TipoJornada; titulo: string; descricao?: string; vinculo?: Vinculo; escudo?: Blob | null; escudoAnterior?: string }) => {
+      if (demo) { avisoDemo(); return; }
+      const clube = v.tipo === 'clube';
+      let escudoUrl: string | null | undefined;
+      if (clube && v.escudo instanceof Blob) escudoUrl = await enviarEscudo(escolaId, v.atletaId, v.escudo);
+      else if (!clube || v.escudo === null) escudoUrl = null;
+      const { error } = await supabase.from('nadgol_jornada_eventos').update({
+        data: v.data, data_fim: clube ? v.dataFim || null : null, tipo: v.tipo, titulo: v.titulo.trim(), descricao: v.descricao?.trim() || null,
+        clube: clube ? v.titulo.trim() : null, vinculo: clube ? v.vinculo ?? null : null,
+        ...(escudoUrl !== undefined ? { escudo_url: escudoUrl } : {}),
+      }).eq('id', v.id);
+      falha(error);
+      if (escudoUrl !== undefined && v.escudoAnterior) await removerFotoAntiga(v.escudoAnterior);
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['jornada'] }); toast.success('Jornada atualizada.'); },
+    onError: erroPadrao,
+  });
+}
+
+export function useDeleteJourneyEvent() {
+  const { demo } = useEscola();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { id: string; escudo?: string }) => {
+      if (demo) { avisoDemo(); return; }
+      const { error } = await supabase.from('nadgol_jornada_eventos').delete().eq('id', v.id);
+      falha(error);
+      await removerFotoAntiga(v.escudo);
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['jornada'] }); toast.success('Item removido da jornada.'); },
+    onError: erroPadrao,
+  });
+}
+
 // ----------------------------------------------------------------------------
 // Quadro tático (estratégias salvas)
 // ----------------------------------------------------------------------------
