@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 
 export interface FormField {
   name: string;
   label: string;
-  type?: 'text' | 'date' | 'number' | 'time' | 'tel' | 'select';
+  type?: 'text' | 'date' | 'number' | 'time' | 'tel' | 'select' | 'textarea';
   required?: boolean;
   placeholder?: string;
   options?: { value: string; label: string }[];
@@ -17,11 +17,15 @@ const inputStyle: React.CSSProperties = {
 };
 
 /** Modal de formulário no mesmo visual do modal de atleta */
-export default function FormModal({ title, fields, submitLabel = 'Salvar', saving, onSubmit, onClose }: {
+export default function FormModal({ title, fields, submitLabel = 'Salvar', saving, initial, topSlot, onSubmit, onClose }: {
   title: string; fields: FormField[]; submitLabel?: string; saving?: boolean;
+  /** Valores iniciais (edição). Campos não tocados saem com o valor inicial. */
+  initial?: Record<string, string>;
+  /** Conteúdo acima dos campos (ex.: foto) */
+  topSlot?: ReactNode;
   onSubmit: (values: Record<string, string>) => void; onClose: () => void;
 }) {
-  const [values, setValues] = useState<Record<string, string>>({});
+  const [values, setValues] = useState<Record<string, string>>(initial ?? {});
   const set = (k: string, v: string) => setValues(p => ({ ...p, [k]: v }));
 
   return (
@@ -46,6 +50,8 @@ export default function FormModal({ title, fields, submitLabel = 'Salvar', savin
           </button>
         </div>
 
+        {topSlot && <div style={{ padding: '20px 20px 0' }}>{topSlot}</div>}
+
         <div style={{ padding: '20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
           {fields.map(f => (
             <label key={f.name} style={{ gridColumn: f.half ? 'auto' : '1 / -1', display: 'block' }}>
@@ -57,6 +63,12 @@ export default function FormModal({ title, fields, submitLabel = 'Salvar', savin
                   <option value="">Selecione</option>
                   {f.options?.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
+              ) : f.type === 'textarea' ? (
+                <textarea
+                  required={f.required} placeholder={f.placeholder} rows={3}
+                  value={values[f.name] ?? ''} onChange={e => set(f.name, e.target.value)}
+                  style={{ ...inputStyle, resize: 'vertical', minHeight: '70px' }}
+                />
               ) : (
                 <input
                   type={f.type ?? 'text'} required={f.required} placeholder={f.placeholder}

@@ -40,6 +40,8 @@ export interface Athlete {
   goals?: number;
   assists?: number;
   attendance?: number;
+  monthlyFee?: number;
+  dueDay?: number;
 }
 
 export interface TrainingClass {

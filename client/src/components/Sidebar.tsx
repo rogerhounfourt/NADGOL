@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { NadgolShield } from './IntroScreen';
-import { ROLE_PERMISSIONS } from '@/lib/permissions';
+import { ROLE_PERMISSIONS, rotuloSecao } from '@/lib/permissions';
 import {
   LayoutDashboard, Users, UserCheck, ClipboardList, Activity,
   Trophy, DollarSign, TrendingUp, Medal, Bell, MessageSquare,
@@ -175,7 +175,7 @@ export default function Sidebar() {
                 onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; } }}
               >
                 <Icon size={18} style={{ flexShrink: 0 }} />
-                {showLabels && item.label}
+                {showLabels && rotuloSecao(currentUser?.role, item.id, item.label)}
               </button>
             );
           })}

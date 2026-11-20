@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useApp } from '@/contexts/AppContext';
 import { supabase } from './supabase';
+import { enviarFoto, removerFotoAntiga } from './foto';
 import { ATHLETES, CLASSES, FINANCIAL, getCategory, NOTIFICATIONS, CHAT_MESSAGES, COMPETITIONS, type Competition, type Notification, type ChatMessage, type UserRole, type Athlete, type TrainingClass, type FinancialRecord } from './data';
 
 const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
@@ -36,6 +37,7 @@ function paraAthlete(r: any): Athlete {
     favoriteClub: r.clube_favorito ?? undefined, classId: r.turma_id ?? '',
     status: r.status === 'ativo' ? 'active' : 'inactive',
     goals: r.gols ?? 0, assists: r.assistencias ?? 0, attendance: r.presenca_pct ?? 0,
+    monthlyFee: r.valor_mensalidade != null ? Number(r.valor_mensalidade) : undefined, dueDay: r.dia_vencimento ?? undefined,
   };
 }
 
@@ -61,6 +63,9 @@ export interface NovoAtleta {
   nome: string; dataNascimento: string; posicao?: string; peDominante?: string;
   alturaCm?: number; pesoKg?: number; telefone?: string; unidadeId?: string; turmaId?: string;
   sonho?: string; clubeFavorito?: string; valorMensalidade?: number; diaVencimento?: number;
+  objetivo?: string; observacoes?: string;
+  /** foto já recortada (Blob JPEG) */
+  foto?: Blob;
 }
 
 export function useCreateAthlete() {
@@ -75,14 +80,78 @@ export function useCreateAthlete() {
         altura_cm: a.alturaCm || null, peso_kg: a.pesoKg || null, telefone: a.telefone || null,
         unidade_id: a.unidadeId || null, sonho: a.sonho || null, clube_favorito: a.clubeFavorito || null,
         valor_mensalidade: a.valorMensalidade ?? null, dia_vencimento: a.diaVencimento ?? null,
+        objetivo: a.objetivo || null, observacoes: a.observacoes || null,
       }).select('id').single();
       falha(error);
       if (a.turmaId) {
         const r = await supabase.from('nadgol_turmas_atletas').insert({ turma_id: a.turmaId, atleta_id: data!.id, escola_id: escolaId });
         falha(r.error);
       }
+      if (a.foto) {
+        // O atleta já está salvo; se só a foto falhar, avisa sem perder o cadastro.
+        try {
+          const url = await enviarFoto(escolaId, data!.id, a.foto);
+          const r = await supabase.rpc('nadgol_atualizar_atleta', { p_atleta: data!.id, p: { foto_url: url } });
+          falha(r.error);
+        } catch { toast.warning('Atleta cadastrado, mas a foto não foi enviada. Abra o cadastro e tente de novo.'); }
+      }
     },
     onSuccess: () => { if (!demo) toast.success('Atleta cadastrado.'); qc.invalidateQueries({ queryKey: ['atletas'] }); qc.invalidateQueries({ queryKey: ['turmas'] }); },
+    onError: erroPadrao,
+  });
+}
+
+export interface EdicaoAtleta {
+  id: string;
+  nome?: string; dataNascimento?: string; posicao?: string; peDominante?: string;
+  alturaCm?: number | null; pesoKg?: number | null; telefone?: string; clubeFavorito?: string;
+  sonho?: string; objetivo?: string; observacoes?: string;
+  /** só equipe */ status?: 'ativo' | 'inativo';
+  /** só administrador */ valorMensalidade?: number | null; diaVencimento?: number | null;
+  /** só equipe: trocar de turma */ turmaId?: string; turmaAnteriorId?: string;
+  /** undefined = não mexeu · Blob = nova foto · null = remover */ foto?: Blob | null; fotoAtual?: string;
+}
+
+const MAPA_CAMPOS: Record<string, string> = {
+  nome: 'nome', dataNascimento: 'data_nascimento', posicao: 'posicao', peDominante: 'pe_dominante',
+  alturaCm: 'altura_cm', pesoKg: 'peso_kg', telefone: 'telefone', clubeFavorito: 'clube_favorito',
+  sonho: 'sonho', objetivo: 'objetivo', observacoes: 'observacoes', status: 'status',
+  valorMensalidade: 'valor_mensalidade', diaVencimento: 'dia_vencimento',
+};
+
+/** Edita o cadastro: aluno, responsável (dados pessoais e foto) e equipe/administrador. A regra de quem pode o quê fica no banco. */
+export function useUpdateAthlete() {
+  const { escolaId, demo } = useEscola();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (e: EdicaoAtleta) => {
+      if (demo) { avisoDemo(); return; }
+      const p: Record<string, unknown> = {};
+      for (const [k, col] of Object.entries(MAPA_CAMPOS)) {
+        const v = (e as unknown as Record<string, unknown>)[k];
+        if (v !== undefined) p[col] = v;
+      }
+      let novaFoto: string | null | undefined;
+      if (e.foto instanceof Blob) { novaFoto = await enviarFoto(escolaId, e.id, e.foto); p.foto_url = novaFoto; }
+      else if (e.foto === null) { novaFoto = null; p.foto_url = null; }
+
+      const r = await supabase.rpc('nadgol_atualizar_atleta', { p_atleta: e.id, p });
+      falha(r.error);
+      if (novaFoto !== undefined) void removerFotoAntiga(e.fotoAtual);
+
+      if (e.turmaId !== undefined && e.turmaId !== (e.turmaAnteriorId ?? '')) {
+        const del = await supabase.from('nadgol_turmas_atletas').delete().eq('atleta_id', e.id);
+        falha(del.error);
+        if (e.turmaId) {
+          const ins = await supabase.from('nadgol_turmas_atletas').insert({ turma_id: e.turmaId, atleta_id: e.id, escola_id: escolaId });
+          falha(ins.error);
+        }
+      }
+    },
+    onSuccess: () => {
+      if (!demo) toast.success('Cadastro atualizado.');
+      for (const k of ['atletas', 'turmas', 'ranking', 'metricas', 'xp-ranking']) qc.invalidateQueries({ queryKey: [k] });
+    },
     onError: erroPadrao,
   });
 }
@@ -127,24 +196,24 @@ export function useClasses() {
 
 export interface NovaTurma { nome: string; categoria?: string; diaSemana?: string; horario?: string; treinadorNome?: string; maxAtletas?: number; unidadeNome?: string }
 
+async function resolverUnidade(escolaId: string, nome?: string): Promise<string | null> {
+  const n = nome?.trim();
+  if (!n) return null;
+  const ex = await supabase.from('nadgol_unidades').select('id').eq('escola_id', escolaId).ilike('nome', n).maybeSingle();
+  falha(ex.error);
+  if (ex.data) return ex.data.id;
+  const nova = await supabase.from('nadgol_unidades').insert({ escola_id: escolaId, nome: n }).select('id').single();
+  falha(nova.error);
+  return nova.data!.id;
+}
+
 export function useCreateClass() {
   const { escolaId, demo } = useEscola();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (t: NovaTurma) => {
       if (demo) { avisoDemo(); return; }
-      let unidadeId: string | null = null;
-      const nomeUnidade = t.unidadeNome?.trim();
-      if (nomeUnidade) {
-        const ex = await supabase.from('nadgol_unidades').select('id').eq('escola_id', escolaId).ilike('nome', nomeUnidade).maybeSingle();
-        falha(ex.error);
-        if (ex.data) unidadeId = ex.data.id;
-        else {
-          const nova = await supabase.from('nadgol_unidades').insert({ escola_id: escolaId, nome: nomeUnidade }).select('id').single();
-          falha(nova.error);
-          unidadeId = nova.data!.id;
-        }
-      }
+      const unidadeId = await resolverUnidade(escolaId, t.unidadeNome);
       const { error } = await supabase.from('nadgol_turmas').insert({
         escola_id: escolaId, nome: t.nome.trim(), categoria: t.categoria || null, dia_semana: t.diaSemana || null,
         horario: t.horario || null, treinador_nome: t.treinadorNome || null, max_atletas: t.maxAtletas || 20, unidade_id: unidadeId,
@@ -152,6 +221,60 @@ export function useCreateClass() {
       falha(error);
     },
     onSuccess: () => { if (!demo) toast.success('Turma criada.'); qc.invalidateQueries({ queryKey: ['turmas'] }); qc.invalidateQueries({ queryKey: ['unidades'] }); },
+    onError: erroPadrao,
+  });
+}
+
+/** Edita os dados da turma (administrador). */
+export function useUpdateClass() {
+  const { escolaId, demo } = useEscola();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (t: NovaTurma & { id: string }) => {
+      if (demo) { avisoDemo(); return; }
+      const unidadeId = await resolverUnidade(escolaId, t.unidadeNome);
+      const { error } = await supabase.from('nadgol_turmas').update({
+        nome: t.nome.trim(), categoria: t.categoria || null, dia_semana: t.diaSemana || null,
+        horario: t.horario || null, treinador_nome: t.treinadorNome || null, max_atletas: t.maxAtletas || 20, unidade_id: unidadeId,
+      }).eq('id', t.id).eq('escola_id', escolaId);
+      falha(error);
+    },
+    onSuccess: () => { if (!demo) toast.success('Turma atualizada.'); qc.invalidateQueries({ queryKey: ['turmas'] }); qc.invalidateQueries({ queryKey: ['unidades'] }); },
+    onError: erroPadrao,
+  });
+}
+
+/** Arquiva a turma: some da lista, mas o histórico de presença continua no banco. */
+export function useArchiveClass() {
+  const { escolaId, demo } = useEscola();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      if (demo) { avisoDemo(); return; }
+      const { error } = await supabase.from('nadgol_turmas').update({ ativo: false }).eq('id', id).eq('escola_id', escolaId);
+      falha(error);
+    },
+    onSuccess: () => { if (!demo) toast.success('Turma arquivada.'); qc.invalidateQueries({ queryKey: ['turmas'] }); qc.invalidateQueries({ queryKey: ['atletas'] }); },
+    onError: erroPadrao,
+  });
+}
+
+/** Coloca ou tira um atleta da turma (administrador e treinador). */
+export function useSetClassMember() {
+  const { escolaId, demo } = useEscola();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { turmaId: string; atletaId: string; entrar: boolean }) => {
+      if (demo) { avisoDemo(); return; }
+      if (v.entrar) {
+        const { error } = await supabase.from('nadgol_turmas_atletas').insert({ turma_id: v.turmaId, atleta_id: v.atletaId, escola_id: escolaId });
+        falha(error);
+      } else {
+        const { error } = await supabase.from('nadgol_turmas_atletas').delete().eq('turma_id', v.turmaId).eq('atleta_id', v.atletaId);
+        falha(error);
+      }
+    },
+    onSuccess: (_d, v) => { if (!demo) toast.success(v.entrar ? 'Atleta adicionado à turma.' : 'Atleta removido da turma.'); qc.invalidateQueries({ queryKey: ['turmas'] }); qc.invalidateQueries({ queryKey: ['atletas'] }); },
     onError: erroPadrao,
   });
 }

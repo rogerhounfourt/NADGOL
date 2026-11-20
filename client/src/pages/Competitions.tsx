@@ -6,6 +6,7 @@ import { Loading, Empty, ErrorState } from '@/components/PageState';
 import { useAthletes, useCompetitions, useCreateCompetition } from '@/lib/queries';
 import { Trophy, Calendar, Users, Plus, Target } from 'lucide-react';
 
+import AvatarAtleta from '@/components/AvatarAtleta';
 export default function Competitions() {
   const { currentUser, demo } = useApp();
   const comps = useCompetitions();
@@ -92,9 +93,7 @@ export default function Competitions() {
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                 {athletes.map(a => (
                   <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#1A1A1A', borderRadius: '4px', padding: '5px 10px' }}>
-                    <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'linear-gradient(135deg, #CC1A1A, #991414)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: '11px', color: '#fff' }}>
-                      {a.name.charAt(0)}
-                    </div>
+                    <AvatarAtleta nome={a.name} foto={a.photo} tamanho={22} />
                     <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>{a.name.split(' ')[0]}</span>
                   </div>
                 ))}
@@ -118,9 +117,7 @@ export default function Competitions() {
           {athleteStats.map((a, i) => (
             <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px', background: '#1A1A1A', borderRadius: '6px' }}>
               <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 800, fontSize: '18px', color: 'rgba(255,255,255,0.2)', width: '24px' }}>{i + 1}</span>
-              <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'linear-gradient(135deg, #CC1A1A, #991414)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: '15px', color: '#fff' }}>
-                {a.name.charAt(0)}
-              </div>
+              <AvatarAtleta nome={a.name} foto={a.photo} tamanho={34} />
               <div style={{ flex: 1 }}>
                 <p style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '13px', color: '#fff' }}>{a.name}</p>
                 <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '11px', color: 'rgba(255,255,255,0.35)' }}>{a.position}</p>

@@ -5,6 +5,7 @@ import { Activity, TrendingUp, Plus } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import FormModal from '@/components/FormModal';
 import { Loading, Empty, ErrorState } from '@/components/PageState';
+import AvatarAtleta from '@/components/AvatarAtleta';
 import {
   useAthletes, usePhysicalEvals, useCreatePhysicalEval, useEvaluations, useCreateEvaluation, TIPO_AVALIACAO, type TipoAvaliacao,
 } from '@/lib/queries';
@@ -80,9 +81,7 @@ export default function Performance() {
 
       {/* Athlete header */}
       <div className="nadgol-card nadgol-card-active" style={{ padding: '20px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-        <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'linear-gradient(135deg, #CC1A1A, #991414)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 800, fontSize: '24px', color: '#fff' }}>
-          {athlete.name.charAt(0)}
-        </div>
+        <AvatarAtleta nome={athlete.name} foto={athlete.photo} tamanho={56} />
         <div>
           <h3 style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 800, fontSize: '22px', color: '#fff', textTransform: 'uppercase' }}>{athlete.name}</h3>
           <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>{athlete.position} · {getCategory(athlete.birthYear)}</p>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/contexts/AppContext';
-import { canAccess } from '@/lib/permissions';
+import { canAccess, rotuloSecao } from '@/lib/permissions';
 import { useNotifications } from '@/lib/queries';
 import BolaFutebol from './BolaFutebol';
 import { LayoutDashboard, Users, ClipboardList, Medal, Bell, Activity, Zap, Menu } from 'lucide-react';
@@ -34,7 +34,7 @@ export default function MobileNav() {
 
   const naoLidas = (notificacoes.data ?? []).filter(n => !n.read).length;
   const itens = CANDIDATOS.filter(n => currentUser && canAccess(currentUser.role, n.id)).slice(0, 4);
-  const todos = [...itens, { id: '__mais', label: 'Mais', icon: Menu }];
+  const todos = [...itens.map(i => ({ ...i, label: rotuloSecao(currentUser?.role, i.id, i.label) })), { id: '__mais', label: 'Mais', icon: Menu }];
   const idxAtivo = sidebarOpen ? todos.length - 1 : todos.findIndex(i => i.id === activeSection);
   const larg = 100 / todos.length;
 

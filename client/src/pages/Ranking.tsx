@@ -3,6 +3,7 @@ import { useRanking } from '@/lib/queries';
 import { Loading, Empty, ErrorState } from '@/components/PageState';
 import { Medal, Crown, Star } from 'lucide-react';
 
+import AvatarAtleta from '@/components/AvatarAtleta';
 export default function Ranking() {
   const q = useRanking();
   const sorted = q.data ?? [];
@@ -48,15 +49,7 @@ export default function Ranking() {
             >
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px' }}>
                 <div style={{ position: 'relative' }}>
-                  <div style={{
-                    width: '56px', height: '56px', borderRadius: '50%',
-                    background: `linear-gradient(135deg, ${color}44, ${color}22)`,
-                    border: `2px solid ${color}`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 800, fontSize: '24px', color: '#fff',
-                  }}>
-                    {athlete.name.charAt(0)}
-                  </div>
+                  <AvatarAtleta nome={athlete.name} foto={athlete.photo} tamanho={56} borda={`2px solid ${color}`} />
                   <div style={{
                     position: 'absolute', bottom: '-4px', right: '-4px',
                     width: '22px', height: '22px', borderRadius: '50%',
@@ -114,9 +107,7 @@ export default function Ranking() {
               }}>
                 {i + 1}
               </span>
-              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg, #CC1A1A, #991414)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: '16px', color: '#fff', flexShrink: 0 }}>
-                {athlete.name.charAt(0)}
-              </div>
+              <AvatarAtleta nome={athlete.name} foto={athlete.photo} tamanho={36} />
               <div style={{ flex: 1 }}>
                 <p style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '14px', color: '#fff' }}>{athlete.name}</p>
                 <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '11px', color: 'rgba(255,255,255,0.35)' }}>{athlete.position} · {getCategory(athlete.birthYear)}</p>

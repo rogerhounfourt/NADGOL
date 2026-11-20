@@ -1,16 +1,18 @@
 import { useState } from 'react';
-import { getCategory, getAge, Athlete } from '@/lib/data';
+import { getCategory, getAge, type Athlete, type TrainingClass, type UserRole } from '@/lib/data';
 import { useApp } from '@/contexts/AppContext';
-import { useAthletes, useClasses, useCreateAthlete, useAthleteMetrics } from '@/lib/queries';
+import { useAthletes, useClasses, useCreateAthlete, useUpdateAthlete, useAthleteMetrics } from '@/lib/queries';
+import AvatarAtleta from '@/components/AvatarAtleta';
+import FotoUpload from '@/components/FotoUpload';
 import ReportButton from '@/components/ReportButton';
 import { relatorioEscola } from '@/lib/relatorios';
 import FormModal, { type FormField } from '@/components/FormModal';
 import { Loading, Empty, ErrorState } from '@/components/PageState';
-import { Search, Plus, Filter, ChevronRight, X } from 'lucide-react';
+import { Search, Plus, ChevronRight, X, Pencil } from 'lucide-react';
 
 const POSITIONS = ['Todos', 'Atacante', 'Meio-Campo', 'Zagueiro', 'Lateral', 'Goleiro'];
 
-function AthleteModal({ athlete, onClose }: { athlete: Athlete; onClose: () => void }) {
+function AthleteModal({ athlete, onClose, onEdit }: { athlete: Athlete; onClose: () => void; onEdit?: () => void }) {
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
       onClick={onClose}>
@@ -27,14 +29,7 @@ function AthleteModal({ athlete, onClose }: { athlete: Athlete; onClose: () => v
         {/* Header */}
         <div style={{ padding: '20px', borderBottom: '1px solid #2A2A2A', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <div style={{
-              width: '56px', height: '56px', borderRadius: '50%',
-              background: 'linear-gradient(135deg, #CC1A1A, #991414)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 800, fontSize: '24px', color: '#fff',
-            }}>
-              {athlete.name.charAt(0)}
-            </div>
+            <AvatarAtleta nome={athlete.name} foto={athlete.photo} tamanho={64} />
             <div>
               <h2 style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 800, fontSize: '22px', color: '#fff', textTransform: 'uppercase' }}>
                 {athlete.name}
@@ -83,11 +78,34 @@ function AthleteModal({ athlete, onClose }: { athlete: Athlete; onClose: () => v
             ))}
           </div>
 
+          {(athlete.goal || athlete.observations) && (
+            <div style={{ marginTop: '12px', display: 'grid', gap: '8px' }}>
+              {athlete.goal && (
+                <div style={{ background: '#1A1A1A', borderRadius: '6px', padding: '10px 12px' }}>
+                  <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>Objetivo</p>
+                  <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: '#fff' }}>{athlete.goal}</p>
+                </div>
+              )}
+              {athlete.observations && (
+                <div style={{ background: '#1A1A1A', borderRadius: '6px', padding: '10px 12px' }}>
+                  <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>Observações</p>
+                  <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: '#fff', whiteSpace: 'pre-wrap' }}>{athlete.observations}</p>
+                </div>
+              )}
+            </div>
+          )}
+
           {athlete.dream && (
             <div style={{ marginTop: '12px', background: 'rgba(204,26,26,0.08)', border: '1px solid rgba(204,26,26,0.2)', borderRadius: '6px', padding: '12px' }}>
               <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', color: '#CC1A1A', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>Sonho do Atleta</p>
               <p style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 500, fontSize: '13px', color: '#fff', fontStyle: 'italic' }}>"{athlete.dream}"</p>
             </div>
+          )}
+
+          {onEdit && (
+            <button onClick={onEdit} className="nadgol-btn-primary" style={{ marginTop: '16px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '11px 16px', borderRadius: '6px', fontSize: '13px', border: 'none', cursor: 'pointer' }}>
+              <Pencil size={15} /> Editar cadastro
+            </button>
           )}
         </div>
       </div>
@@ -95,34 +113,93 @@ function AthleteModal({ athlete, onClose }: { athlete: Athlete; onClose: () => v
   );
 }
 
-export default function Athletes() {
-  const [search, setSearch] = useState('');
-  const [posFilter, setPosFilter] = useState('Todos');
-  const [selected, setSelected] = useState<Athlete | null>(null);
-  const [creating, setCreating] = useState(false);
-  const { currentUser } = useApp();
-  const { data: athletes = [], isLoading, isError, refetch } = useAthletes();
-  const { data: classes = [] } = useClasses();
-  const metricas = useAthleteMetrics();
-  const createAthlete = useCreateAthlete();
-  const canEdit = currentUser?.role === 'admin' || currentUser?.role === 'coach';
+const vazio = (s?: string) => (!s || s === '—' ? '' : s);
+
+/** Cadastro e edição do atleta. Aluno e responsável editam dados pessoais e foto; equipe e administrador editam mais (o banco confere). */
+function AtletaForm({ atleta, classes, role, onClose }: { atleta?: Athlete; classes: TrainingClass[]; role: UserRole; onClose: () => void }) {
+  const criar = useCreateAthlete();
+  const editar = useUpdateAthlete();
+  const [foto, setFoto] = useState<Blob | null | undefined>(undefined);
+  const equipe = role === 'admin' || role === 'coach';
+  const admin = role === 'admin';
+  const editando = !!atleta;
 
   const fields: FormField[] = [
     { name: 'nome', label: 'Nome completo', required: true },
     { name: 'dataNascimento', label: 'Data de nascimento', type: 'date', required: true, half: true },
     { name: 'posicao', label: 'Posição', type: 'select', half: true, options: POSITIONS.slice(1).map(v => ({ value: v, label: v })) },
     { name: 'peDominante', label: 'Pé dominante', type: 'select', half: true, options: ['Direito', 'Esquerdo', 'Ambos'].map(v => ({ value: v, label: v })) },
-    { name: 'turmaId', label: 'Turma', type: 'select', half: true, options: classes.map(c => ({ value: c.id, label: c.name })) },
+    ...(equipe ? [{ name: 'turmaId', label: 'Turma', type: 'select' as const, half: true, options: classes.map(c => ({ value: c.id, label: c.name })) }] : []),
     { name: 'alturaCm', label: 'Altura (cm)', type: 'number', half: true },
     { name: 'pesoKg', label: 'Peso (kg)', type: 'number', half: true },
     { name: 'telefone', label: 'Telefone do responsável', type: 'tel', half: true, placeholder: '(00) 00000-0000' },
     { name: 'clubeFavorito', label: 'Clube que torce', half: true },
-    ...(currentUser?.role === 'admin' ? [
+    ...(equipe && editando ? [{ name: 'status', label: 'Situação', type: 'select' as const, half: true, options: [{ value: 'ativo', label: 'Ativo' }, { value: 'inativo', label: 'Inativo' }] }] : []),
+    ...(admin ? [
       { name: 'valorMensalidade', label: 'Mensalidade (R$)', type: 'number' as const, half: true },
       { name: 'diaVencimento', label: 'Dia do vencimento (1-28)', type: 'number' as const, half: true },
     ] : []),
     { name: 'sonho', label: 'Sonho do atleta' },
+    { name: 'objetivo', label: 'Objetivo' },
+    { name: 'observacoes', label: 'Observações', type: 'textarea' },
   ];
+
+  const initial: Record<string, string> | undefined = atleta ? {
+    nome: atleta.name, dataNascimento: atleta.birthDate, posicao: vazio(atleta.position), peDominante: atleta.dominantFoot,
+    turmaId: atleta.classId, alturaCm: atleta.height ? String(atleta.height) : '', pesoKg: atleta.weight ? String(atleta.weight) : '',
+    telefone: vazio(atleta.phone), clubeFavorito: vazio(atleta.favoriteClub), status: atleta.status === 'active' ? 'ativo' : 'inativo',
+    valorMensalidade: atleta.monthlyFee != null ? String(atleta.monthlyFee) : '', diaVencimento: atleta.dueDay != null ? String(atleta.dueDay) : '',
+    sonho: vazio(atleta.dream), objetivo: vazio(atleta.goal), observacoes: vazio(atleta.observations),
+  } : undefined;
+
+  const num = (s?: string) => (s ? Number(s) : undefined);
+  const dia = (s?: string) => (s ? Math.min(28, Math.max(1, Math.round(Number(s)))) : undefined);
+
+  return (
+    <FormModal
+      title={editando ? 'Editar cadastro' : 'Novo Atleta'} fields={fields} initial={initial}
+      submitLabel={editando ? 'Salvar alterações' : 'Cadastrar'} saving={criar.isPending || editar.isPending}
+      topSlot={<FotoUpload nome={atleta?.name ?? ''} atual={atleta?.photo} value={foto} onChange={setFoto} />}
+      onClose={onClose}
+      onSubmit={v => {
+        if (!atleta) {
+          criar.mutate({
+            nome: v.nome, dataNascimento: v.dataNascimento, posicao: v.posicao, peDominante: v.peDominante, turmaId: v.turmaId,
+            alturaCm: num(v.alturaCm), pesoKg: num(v.pesoKg), telefone: v.telefone, clubeFavorito: v.clubeFavorito, sonho: v.sonho,
+            objetivo: v.objetivo, observacoes: v.observacoes, valorMensalidade: num(v.valorMensalidade), diaVencimento: dia(v.diaVencimento),
+            foto: foto instanceof Blob ? foto : undefined,
+          }, { onSuccess: onClose });
+          return;
+        }
+        editar.mutate({
+          id: atleta.id, nome: v.nome, dataNascimento: v.dataNascimento, posicao: v.posicao, peDominante: v.peDominante,
+          alturaCm: num(v.alturaCm) ?? null, pesoKg: num(v.pesoKg) ?? null, telefone: v.telefone, clubeFavorito: v.clubeFavorito,
+          sonho: v.sonho, objetivo: v.objetivo, observacoes: v.observacoes,
+          ...(equipe ? { status: (v.status || undefined) as 'ativo' | 'inativo' | undefined, turmaId: v.turmaId ?? '', turmaAnteriorId: atleta.classId } : {}),
+          ...(admin ? { valorMensalidade: num(v.valorMensalidade) ?? null, diaVencimento: dia(v.diaVencimento) ?? null } : {}),
+          foto, fotoAtual: atleta.photo,
+        }, { onSuccess: onClose });
+      }}
+    />
+  );
+}
+
+export default function Athletes() {
+  const [search, setSearch] = useState('');
+  const [posFilter, setPosFilter] = useState('Todos');
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const { currentUser } = useApp();
+  const { data: athletes = [], isLoading, isError, refetch } = useAthletes();
+  const { data: classes = [] } = useClasses();
+  const metricas = useAthleteMetrics();
+  const role = currentUser?.role ?? 'athlete';
+  const canEdit = role === 'admin' || role === 'coach';
+  // Aluno e responsável só enxergam o(s) próprio(s) cadastro(s) (regra do banco), então podem editar o que aparece.
+  const podeEditarCadastro = canEdit || role === 'parent' || role === 'athlete';
+  const selected = athletes.find(a => a.id === selectedId) ?? null;
+  const editing = athletes.find(a => a.id === editingId) ?? null;
 
   const filtered = athletes.filter(a => {
     const matchSearch = a.name.toLowerCase().includes(search.toLowerCase());
@@ -218,18 +295,10 @@ export default function Athletes() {
               opacity: 0,
               animation: `fadeInUp 0.4s cubic-bezier(0.23, 1, 0.32, 1) ${Math.min(i, 12) * 50}ms forwards`,
             }}
-            onClick={() => setSelected(athlete)}
+            onClick={() => setSelectedId(athlete.id)}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-              <div style={{
-                width: '44px', height: '44px', borderRadius: '50%',
-                background: athlete.status === 'active' ? 'linear-gradient(135deg, #CC1A1A, #991414)' : '#2A2A2A',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 800, fontSize: '20px', color: '#fff',
-                flexShrink: 0,
-              }}>
-                {athlete.name.charAt(0)}
-              </div>
+              <AvatarAtleta nome={athlete.name} foto={athlete.photo} tamanho={44} ativo={athlete.status === 'active'} />
               <div style={{ flex: 1, overflow: 'hidden' }}>
                 <p style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '14px', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {athlete.name}
@@ -269,22 +338,11 @@ export default function Athletes() {
         ))}
       </div>
 
-      {selected && <AthleteModal athlete={selected} onClose={() => setSelected(null)} />}
-      {creating && (
-        <FormModal
-          title="Novo Atleta" fields={fields} submitLabel="Cadastrar" saving={createAthlete.isPending}
-          onClose={() => setCreating(false)}
-          onSubmit={v => {
-            const dia = v.diaVencimento ? Math.min(28, Math.max(1, Math.round(Number(v.diaVencimento)))) : undefined;
-            createAthlete.mutate({
-              nome: v.nome, dataNascimento: v.dataNascimento, posicao: v.posicao, peDominante: v.peDominante, turmaId: v.turmaId,
-              alturaCm: v.alturaCm ? Number(v.alturaCm) : undefined, pesoKg: v.pesoKg ? Number(v.pesoKg) : undefined,
-              telefone: v.telefone, clubeFavorito: v.clubeFavorito, sonho: v.sonho,
-              valorMensalidade: v.valorMensalidade ? Number(v.valorMensalidade) : undefined, diaVencimento: dia,
-            }, { onSuccess: () => setCreating(false) });
-          }}
-        />
+      {selected && !editing && (
+        <AthleteModal athlete={selected} onClose={() => setSelectedId(null)} onEdit={podeEditarCadastro ? () => setEditingId(selected.id) : undefined} />
       )}
+      {creating && <AtletaForm classes={classes} role={role} onClose={() => setCreating(false)} />}
+      {editing && <AtletaForm atleta={editing} classes={classes} role={role} onClose={() => setEditingId(null)} />}
     </div>
   );
 }
