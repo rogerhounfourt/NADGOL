@@ -3,14 +3,16 @@ import { useApp } from "@/contexts/AppContext";
 import FormModal from "@/components/FormModal";
 import { Loading, Empty, ErrorState } from "@/components/PageState";
 import { useAthletes, useJourney, useCreateJourneyEvent, type TipoJornada } from "@/lib/queries";
-import { Trophy, Zap, TrendingUp, Award, Calendar } from "lucide-react";
+import { Trophy, Zap, TrendingUp, Award, Calendar, Shield } from "lucide-react";
 
 interface JourneyEvent {
   id: string;
   date: string;
   title: string;
   description: string;
-  type: "milestone" | "achievement" | "competition" | "improvement" | "award";
+  type: "milestone" | "achievement" | "competition" | "improvement" | "award" | "club";
+  tempo?: string;
+  vinculo?: "teste" | "temporada";
   icon: React.ReactNode;
   color: string;
 }
@@ -20,6 +22,7 @@ const TIPO_UI: Record<TipoJornada, { type: JourneyEvent["type"]; icon: React.Rea
   competicao: { type: "competition", icon: <Trophy className="w-5 h-5" />, color: "from-yellow-500 to-yellow-600" },
   conquista: { type: "achievement", icon: <Zap className="w-5 h-5" />, color: "from-red-500 to-red-600" },
   premiacao: { type: "award", icon: <Award className="w-5 h-5" />, color: "from-orange-500 to-orange-600" },
+  clube: { type: "club", icon: <Shield className="w-5 h-5" />, color: "from-purple-500 to-purple-600" },
   evolucao: { type: "improvement", icon: <TrendingUp className="w-5 h-5" />, color: "from-green-500 to-green-600" },
 };
 const MESES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -31,6 +34,7 @@ const AthleteJourney = () => {
   const lista = (atl.data ?? []).filter(a => a.status === "active");
   const [atletaId, setAtletaId] = useState("");
   const [novo, setNovo] = useState(false);
+  const [novoClube, setNovoClube] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<JourneyEvent | null>(null);
   useEffect(() => {
     if (atletaId || lista.length === 0) return;
@@ -42,7 +46,7 @@ const AthleteJourney = () => {
   const atleta = lista.find(a => a.id === atletaId);
 
   const journeyEvents: JourneyEvent[] = (q.data ?? []).map(e => ({
-    id: e.id, date: dataBonita(e.data), title: e.titulo, description: e.descricao, ...TIPO_UI[e.tipo],
+    id: e.id, date: dataBonita(e.data), title: e.titulo, description: e.descricao, tempo: e.tempo, vinculo: e.vinculo, ...TIPO_UI[e.tipo],
   }));
   const primeira = (q.data ?? [])[0]?.data;
   const meses = primeira ? Math.max(1, Math.round((Date.now() - new Date(`${primeira}T12:00:00`).getTime()) / (30 * 864e5))) : 0;
@@ -75,6 +79,7 @@ const AthleteJourney = () => {
             </select>
           )}
           {podeEditar && <button onClick={() => setNovo(true)} className="nadgol-btn-primary" style={{ padding: "8px 14px", borderRadius: "6px", fontSize: "12px", border: "none", cursor: "pointer" }}>+ Novo evento</button>}
+          {podeEditar && <button onClick={() => setNovoClube(true)} style={{ padding: "8px 14px", borderRadius: "6px", fontSize: "12px", border: "1px solid #CC1A1A", background: "transparent", color: "#fff", cursor: "pointer" }}>+ Passagem por clube</button>}
         </div>
       </div>
 
@@ -184,7 +189,10 @@ const AthleteJourney = () => {
                     {event.type === "competition" && "Competição"}
                     {event.type === "improvement" && "Evolução"}
                     {event.type === "award" && "Premiação"}
+                    {event.type === "club" && "Clube"}
                   </span>
+                  {event.vinculo && <span style={{ fontSize: "11px", background: "#2A2A2A", color: "#fff", padding: "4px 8px", borderRadius: "4px", textTransform: "uppercase", fontWeight: 600 }}>{event.vinculo === "teste" ? "Teste" : "Temporada"}</span>}
+                  {event.tempo && <span style={{ fontSize: "11px", background: "#2A2A2A", color: "#ccc", padding: "4px 8px", borderRadius: "4px", fontWeight: 600 }}>⏱ {event.tempo}</span>}
                 </div>
               </div>
             </div>
@@ -219,6 +227,22 @@ const AthleteJourney = () => {
           </div>
         </div>
       </div>
+
+      {novoClube && atleta && (
+        <FormModal
+          title={`Passagem por clube · ${atleta.name.split(" ")[0]}`} submitLabel="Adicionar" saving={criar.isPending}
+          fields={[
+            { name: "clube", label: "Clube em que fez teste ou jogou", required: true, placeholder: "Ex.: Bahia, Vitória, Juazeirense" },
+            { name: "vinculo", label: "Teste ou temporada", type: "select", required: true, half: true, options: [
+              { value: "teste", label: "Teste" }, { value: "temporada", label: "Temporada" } ] },
+            { name: "tempo", label: "Quanto tempo ficou", required: true, half: true, placeholder: "Ex.: 2 semanas, 6 meses" },
+            { name: "data", label: "Data de início", type: "date", required: true },
+            { name: "descricao", label: "Observações (opcional)", type: "textarea" },
+          ]}
+          onSubmit={v => criar.mutate({ atletaId: atleta.id, data: v.data, tipo: "clube", titulo: v.clube, clube: v.clube, tempo: v.tempo, vinculo: v.vinculo as "teste" | "temporada", descricao: v.descricao }, { onSuccess: () => setNovoClube(false) })}
+          onClose={() => setNovoClube(false)}
+        />
+      )}
 
       {novo && atleta && (
         <FormModal
