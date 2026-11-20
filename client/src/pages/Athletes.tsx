@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { getCategory, getAge, type Athlete, type TrainingClass, type UserRole } from '@/lib/data';
 import { useApp } from '@/contexts/AppContext';
-import { useAthletes, useClasses, useCreateAthlete, useUpdateAthlete, useAthleteMetrics } from '@/lib/queries';
+import { useAthletes, useClasses, useUnits, useCreateAthlete, useUpdateAthlete, useAthleteMetrics } from '@/lib/queries';
 import AvatarAtleta from '@/components/AvatarAtleta';
 import FotoUpload from '@/components/FotoUpload';
 import ReportButton from '@/components/ReportButton';
@@ -119,6 +119,7 @@ const vazio = (s?: string) => (!s || s === '—' ? '' : s);
 function AtletaForm({ atleta, classes, role, onClose }: { atleta?: Athlete; classes: TrainingClass[]; role: UserRole; onClose: () => void }) {
   const criar = useCreateAthlete();
   const editar = useUpdateAthlete();
+  const { data: unidades = [] } = useUnits();
   const [foto, setFoto] = useState<Blob | null | undefined>(undefined);
   const equipe = role === 'admin' || role === 'coach';
   const admin = role === 'admin';
@@ -129,8 +130,11 @@ function AtletaForm({ atleta, classes, role, onClose }: { atleta?: Athlete; clas
     { name: 'dataNascimento', label: 'Data de nascimento', type: 'date', required: true, half: true },
     { name: 'posicao', label: 'Posição', type: 'select', half: true, options: POSITIONS.slice(1).map(v => ({ value: v, label: v })) },
     { name: 'peDominante', label: 'Pé dominante', type: 'select', half: true, options: ['Direito', 'Esquerdo', 'Ambos'].map(v => ({ value: v, label: v })) },
-    ...(equipe ? [{ name: 'turmaId', label: 'Turma', type: 'select' as const, half: true, options: classes.map(c => ({ value: c.id, label: c.name })) }] : []),
-    { name: 'alturaCm', label: 'Altura (cm)', type: 'number', half: true },
+    ...(equipe ? [
+      { name: 'turmaId', label: 'Turma', type: 'select' as const, half: true, options: classes.map(c => ({ value: c.id, label: c.name })) },
+      { name: 'unidadeId', label: 'Unidade', type: 'select' as const, half: true, options: unidades.map(u => ({ value: u.id, label: u.nome })) },
+    ] : []),
+    { name: 'alturaCm', label: 'Altura (cm)', type: 'number', half: true, placeholder: '170' },
     { name: 'pesoKg', label: 'Peso (kg)', type: 'number', half: true },
     { name: 'telefone', label: 'Telefone do responsável', type: 'tel', half: true, placeholder: '(00) 00000-0000' },
     { name: 'clubeFavorito', label: 'Clube que torce', half: true },
@@ -146,13 +150,15 @@ function AtletaForm({ atleta, classes, role, onClose }: { atleta?: Athlete; clas
 
   const initial: Record<string, string> | undefined = atleta ? {
     nome: atleta.name, dataNascimento: atleta.birthDate, posicao: vazio(atleta.position), peDominante: atleta.dominantFoot,
-    turmaId: atleta.classId, alturaCm: atleta.height ? String(atleta.height) : '', pesoKg: atleta.weight ? String(atleta.weight) : '',
+    turmaId: atleta.classId, unidadeId: atleta.unitId ?? '', alturaCm: atleta.height ? String(atleta.height) : '', pesoKg: atleta.weight ? String(atleta.weight) : '',
     telefone: vazio(atleta.phone), clubeFavorito: vazio(atleta.favoriteClub), status: atleta.status === 'active' ? 'ativo' : 'inativo',
     valorMensalidade: atleta.monthlyFee != null ? String(atleta.monthlyFee) : '', diaVencimento: atleta.dueDay != null ? String(atleta.dueDay) : '',
     sonho: vazio(atleta.dream), objetivo: vazio(atleta.goal), observacoes: vazio(atleta.observations),
   } : undefined;
 
   const num = (s?: string) => (s ? Number(s) : undefined);
+  // Quem digita 1,70 (metros) no campo de centímetros: converte para 170.
+  const altura = (s?: string) => { const n = num(s); return n !== undefined && n > 0 && n < 3 ? Math.round(n * 100) : n; };
   const dia = (s?: string) => (s ? Math.min(28, Math.max(1, Math.round(Number(s)))) : undefined);
 
   return (
@@ -165,17 +171,17 @@ function AtletaForm({ atleta, classes, role, onClose }: { atleta?: Athlete; clas
         if (!atleta) {
           criar.mutate({
             nome: v.nome, dataNascimento: v.dataNascimento, posicao: v.posicao, peDominante: v.peDominante, turmaId: v.turmaId,
-            alturaCm: num(v.alturaCm), pesoKg: num(v.pesoKg), telefone: v.telefone, clubeFavorito: v.clubeFavorito, sonho: v.sonho,
-            objetivo: v.objetivo, observacoes: v.observacoes, valorMensalidade: num(v.valorMensalidade), diaVencimento: dia(v.diaVencimento),
+            alturaCm: altura(v.alturaCm), pesoKg: num(v.pesoKg), telefone: v.telefone, clubeFavorito: v.clubeFavorito, sonho: v.sonho,
+            unidadeId: v.unidadeId || undefined, objetivo: v.objetivo, observacoes: v.observacoes, valorMensalidade: num(v.valorMensalidade), diaVencimento: dia(v.diaVencimento),
             foto: foto instanceof Blob ? foto : undefined,
           }, { onSuccess: onClose });
           return;
         }
         editar.mutate({
           id: atleta.id, nome: v.nome, dataNascimento: v.dataNascimento, posicao: v.posicao, peDominante: v.peDominante,
-          alturaCm: num(v.alturaCm) ?? null, pesoKg: num(v.pesoKg) ?? null, telefone: v.telefone, clubeFavorito: v.clubeFavorito,
+          alturaCm: altura(v.alturaCm) ?? null, pesoKg: num(v.pesoKg) ?? null, telefone: v.telefone, clubeFavorito: v.clubeFavorito,
           sonho: v.sonho, objetivo: v.objetivo, observacoes: v.observacoes,
-          ...(equipe ? { status: (v.status || undefined) as 'ativo' | 'inativo' | undefined, turmaId: v.turmaId ?? '', turmaAnteriorId: atleta.classId } : {}),
+          ...(equipe ? { status: (v.status || undefined) as 'ativo' | 'inativo' | undefined, unidadeId: v.unidadeId ?? '', turmaId: v.turmaId ?? '', turmaAnteriorId: atleta.classId } : {}),
           ...(admin ? { valorMensalidade: num(v.valorMensalidade) ?? null, diaVencimento: dia(v.diaVencimento) ?? null } : {}),
           foto, fotoAtual: atleta.photo,
         }, { onSuccess: onClose });

@@ -42,6 +42,7 @@ export interface Athlete {
   attendance?: number;
   monthlyFee?: number;
   dueDay?: number;
+  unitId?: string;
 }
 
 export interface TrainingClass {

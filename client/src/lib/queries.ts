@@ -32,7 +32,7 @@ function paraAthlete(r: any): Athlete {
     birthDate: r.data_nascimento, birthYear: Number(String(r.data_nascimento).slice(0, 4)),
     position: r.posicao ?? '—', dominantFoot: r.pe_dominante ?? 'Direito',
     height: Number(r.altura_cm ?? 0), weight: Number(r.peso_kg ?? 0),
-    phone: r.telefone ?? '—', unit: r.unidade_nome ?? '—',
+    phone: r.telefone ?? '—', unit: r.unidade_nome ?? '—', unitId: r.unidade_id ?? undefined,
     observations: r.observacoes ?? undefined, goal: r.objetivo ?? undefined, dream: r.sonho ?? undefined,
     favoriteClub: r.clube_favorito ?? undefined, classId: r.turma_id ?? '',
     status: r.status === 'ativo' ? 'active' : 'inactive',
@@ -106,7 +106,7 @@ export interface EdicaoAtleta {
   nome?: string; dataNascimento?: string; posicao?: string; peDominante?: string;
   alturaCm?: number | null; pesoKg?: number | null; telefone?: string; clubeFavorito?: string;
   sonho?: string; objetivo?: string; observacoes?: string;
-  /** só equipe */ status?: 'ativo' | 'inativo';
+  /** só equipe */ status?: 'ativo' | 'inativo'; unidadeId?: string;
   /** só administrador */ valorMensalidade?: number | null; diaVencimento?: number | null;
   /** só equipe: trocar de turma */ turmaId?: string; turmaAnteriorId?: string;
   /** undefined = não mexeu · Blob = nova foto · null = remover */ foto?: Blob | null; fotoAtual?: string;
@@ -115,7 +115,7 @@ export interface EdicaoAtleta {
 const MAPA_CAMPOS: Record<string, string> = {
   nome: 'nome', dataNascimento: 'data_nascimento', posicao: 'posicao', peDominante: 'pe_dominante',
   alturaCm: 'altura_cm', pesoKg: 'peso_kg', telefone: 'telefone', clubeFavorito: 'clube_favorito',
-  sonho: 'sonho', objetivo: 'objetivo', observacoes: 'observacoes', status: 'status',
+  sonho: 'sonho', objetivo: 'objetivo', observacoes: 'observacoes', status: 'status', unidadeId: 'unidade_id',
   valorMensalidade: 'valor_mensalidade', diaVencimento: 'dia_vencimento',
 };
 
