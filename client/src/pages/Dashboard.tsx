@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useAthletes, useFinancial, useDashboard, competenciaAtual } from '@/lib/queries';
 import { Loading, ErrorState } from '@/components/PageState';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import AvatarAtleta from '@/components/AvatarAtleta';
+import { useApp } from '@/contexts/AppContext';
 import { Users, UserCheck, UserX, TrendingUp, Trophy, AlertCircle, Zap, Target } from 'lucide-react';
 
 function AnimatedNumber({ value, duration = 1200 }: { value: number; duration?: number }) {
@@ -20,6 +22,8 @@ function AnimatedNumber({ value, duration = 1200 }: { value: number; duration?: 
 }
 
 export default function Dashboard() {
+  const { currentUser } = useApp();
+  const equipe = currentUser?.role === 'admin' || currentUser?.role === 'coach';
   const atl = useAthletes();
   const fin = useFinancial(competenciaAtual());
   const dash = useDashboard();
@@ -33,6 +37,20 @@ export default function Dashboard() {
   const attendanceRate = registrosHoje ? Math.round(((presentToday + lateToday) / registrosHoje) * 100) : 0;
   const mesAtual = new Date().getMonth() + 1;
   const birthdays = athletes.filter(a => Number(a.birthDate.split('-')[1]) === mesAtual);
+  const hoje = new Date();
+  const mmdd = (d: string) => d.slice(5, 10);
+  const hojeMD = `${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
+  const ativos = athletes.filter(a => a.status === 'active' && a.birthDate);
+  const aniversariantesHoje = ativos.filter(a => mmdd(a.birthDate) === hojeMD);
+  const proximosAniv = ativos
+    .filter(a => mmdd(a.birthDate) > hojeMD).sort((a, b) => mmdd(a.birthDate).localeCompare(mmdd(b.birthDate))).slice(0, 3);
+  const linkParabens = (a: { name: string; phone: string; birthDate: string }) => {
+    const num = (a.phone || '').replace(/\D/g, '');
+    if (num.length < 10) return null;
+    const idade = hoje.getFullYear() - Number(a.birthDate.slice(0, 4));
+    const msg = `Parabéns, ${a.name.split(' ')[0]}! 🎉⚽ A família Nadgol Academy deseja um dia incrível e um novo ciclo cheio de gols, evolução e conquistas. Feliz aniversário de ${idade} anos!`;
+    return `https://wa.me/${num.startsWith('55') && num.length >= 12 ? num : '55' + num}?text=${encodeURIComponent(msg)}`;
+  };
   const pendingPayments = financial.filter(f => f.status === 'pending' || f.status === 'overdue').length;
   const EVOLUTION_DATA = dash.data?.evolucao ?? [];
   const PERFORMANCE_DATA = [...athletes]
@@ -132,6 +150,35 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {equipe && (
+        <div style={{ marginBottom: '24px', padding: '16px 20px', background: 'linear-gradient(135deg, rgba(234,179,8,0.10), rgba(204,26,26,0.06))', border: '1px solid rgba(234,179,8,0.3)', borderRadius: '8px' }}>
+          <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: '16px', color: '#EAB308', letterSpacing: '0.5px', textTransform: 'uppercase', margin: '0 0 10px' }}>🎂 Aniversariantes de hoje</p>
+          {aniversariantesHoje.length === 0 ? (
+            <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: 'rgba(255,255,255,0.6)', margin: 0 }}>
+              Ninguém faz aniversário hoje.{proximosAniv.length > 0 && ` Próximos: ${proximosAniv.map(a => `${a.name.split(' ')[0]} (${a.birthDate.slice(8, 10)}/${a.birthDate.slice(5, 7)})`).join(', ')}.`}
+            </p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {aniversariantesHoje.map(a => {
+                const link = linkParabens(a);
+                return (
+                  <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                    <AvatarAtleta nome={a.name} foto={a.photo} tamanho={40} />
+                    <div style={{ flex: 1, minWidth: '140px' }}>
+                      <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '14px', color: '#fff', fontWeight: 600, margin: 0 }}>{a.name}</p>
+                      <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>Faz {hoje.getFullYear() - Number(a.birthDate.slice(0, 4))} anos hoje</p>
+                    </div>
+                    {link
+                      ? <a href={link} target="_blank" rel="noopener noreferrer" style={{ padding: '8px 14px', borderRadius: '6px', background: '#25D366', color: '#052e16', fontSize: '12px', fontWeight: 700, textDecoration: 'none', fontFamily: 'DM Sans, sans-serif' }}>Parabenizar no WhatsApp</a>
+                      : <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>Sem telefone cadastrado</span>}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Key Metrics Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '32px' }}>

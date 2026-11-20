@@ -6,7 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useApp } from '@/contexts/AppContext';
 import { supabase } from './supabase';
-import { enviarFoto, removerFotoAntiga } from './foto';
+import { enviarFoto, enviarEscudo, removerFotoAntiga } from './foto';
 import { ATHLETES, CLASSES, FINANCIAL, getCategory, NOTIFICATIONS, CHAT_MESSAGES, COMPETITIONS, type Competition, type Notification, type ChatMessage, type UserRole, type Athlete, type TrainingClass, type FinancialRecord } from './data';
 
 const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
@@ -975,7 +975,8 @@ export function useSaveDaily() {
 // Jornada do atleta
 // ----------------------------------------------------------------------------
 export type TipoJornada = 'marco' | 'conquista' | 'competicao' | 'evolucao' | 'premiacao' | 'clube';
-export interface EventoJornada { id: string; data: string; tipo: TipoJornada; titulo: string; descricao: string; clube?: string; tempo?: string; vinculo?: 'teste' | 'temporada' }
+export type Vinculo = 'teste' | 'temporada' | 'aprovado';
+export interface EventoJornada { id: string; data: string; tipo: TipoJornada; titulo: string; descricao: string; clube?: string; tempo?: string; vinculo?: Vinculo; dataFim?: string; escudo?: string }
 
 export function useJourney(atletaId: string) {
   const { demo } = useEscola();
@@ -983,9 +984,9 @@ export function useJourney(atletaId: string) {
     queryKey: ['jornada', atletaId],
     enabled: !demo && !!atletaId,
     queryFn: async (): Promise<EventoJornada[]> => {
-      const { data, error } = await supabase.from('nadgol_jornada_eventos').select('id, data, tipo, titulo, descricao, clube, tempo_no_clube, vinculo').eq('atleta_id', atletaId).order('data').limit(200);
+      const { data, error } = await supabase.from('nadgol_jornada_eventos').select('id, data, tipo, titulo, descricao, clube, tempo_no_clube, vinculo, data_fim, escudo_url').eq('atleta_id', atletaId).order('data').limit(200);
       falha(error);
-      return (data ?? []).map((r: any) => ({ id: r.id, data: r.data, tipo: (['marco', 'conquista', 'competicao', 'evolucao', 'premiacao', 'clube'].includes(r.tipo) ? r.tipo : 'marco') as TipoJornada, titulo: r.titulo, descricao: r.descricao ?? '', clube: r.clube ?? undefined, tempo: r.tempo_no_clube ?? undefined, vinculo: r.vinculo === 'teste' || r.vinculo === 'temporada' ? r.vinculo : undefined }));
+      return (data ?? []).map((r: any) => ({ id: r.id, data: r.data, tipo: (['marco', 'conquista', 'competicao', 'evolucao', 'premiacao', 'clube'].includes(r.tipo) ? r.tipo : 'marco') as TipoJornada, titulo: r.titulo, descricao: r.descricao ?? '', clube: r.clube ?? undefined, tempo: r.tempo_no_clube ?? undefined, vinculo: ['teste', 'temporada', 'aprovado'].includes(r.vinculo) ? r.vinculo : undefined, dataFim: r.data_fim ?? undefined, escudo: r.escudo_url ?? undefined }));
     },
   });
 }
@@ -994,9 +995,10 @@ export function useCreateJourneyEvent() {
   const { escolaId, demo } = useEscola();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (v: { atletaId: string; data: string; tipo: TipoJornada; titulo: string; descricao?: string; clube?: string; tempo?: string; vinculo?: 'teste' | 'temporada' }) => {
+    mutationFn: async (v: { atletaId: string; data: string; tipo: TipoJornada; titulo: string; descricao?: string; clube?: string; tempo?: string; vinculo?: Vinculo; dataFim?: string; escudo?: Blob }) => {
       if (demo) { avisoDemo(); return; }
-      const { error } = await supabase.from('nadgol_jornada_eventos').insert({ escola_id: escolaId, atleta_id: v.atletaId, data: v.data, tipo: v.tipo, titulo: v.titulo.trim(), descricao: v.descricao?.trim() || null, clube: v.clube?.trim() || null, tempo_no_clube: v.tempo?.trim() || null, vinculo: v.vinculo ?? null });
+      const escudoUrl = v.escudo ? await enviarEscudo(escolaId, v.atletaId, v.escudo) : null;
+      const { error } = await supabase.from('nadgol_jornada_eventos').insert({ escola_id: escolaId, atleta_id: v.atletaId, data: v.data, tipo: v.tipo, titulo: v.titulo.trim(), descricao: v.descricao?.trim() || null, clube: v.clube?.trim() || null, tempo_no_clube: v.tempo?.trim() || null, vinculo: v.vinculo ?? null, data_fim: v.dataFim || null, escudo_url: escudoUrl });
       falha(error);
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['jornada'] }); toast.success('Evento adicionado à jornada.'); },

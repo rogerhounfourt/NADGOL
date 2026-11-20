@@ -58,3 +58,28 @@ export async function removerFotoAntiga(url?: string | null) {
   const caminho = decodeURIComponent(url.slice(i + BUCKET_FOTOS.length + 2).split('?')[0]);
   try { await supabase.storage.from(BUCKET_FOTOS).remove([caminho]); } catch { /* ignora */ }
 }
+
+/** Escudo de clube: cabe em 256x256 sem cortar, mantém o fundo transparente (PNG). */
+export async function reduzirEscudo(file: File): Promise<Blob> {
+  if (!file.type.startsWith('image/')) throw new Error('Escolha um arquivo de imagem.');
+  if (file.size > 25 * 1024 * 1024) throw new Error('Imagem muito grande (máximo 25 MB).');
+  let fonte: CanvasImageSource; let w: number, h: number;
+  try { const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' }); fonte = bmp; w = bmp.width; h = bmp.height; }
+  catch { const img = await carregar(file); fonte = img; w = img.naturalWidth; h = img.naturalHeight; }
+  const LADO_ESCUDO = 256;
+  const escala = Math.min(LADO_ESCUDO / w, LADO_ESCUDO / h, 1);
+  const dw = Math.round(w * escala), dh = Math.round(h * escala);
+  const canvas = document.createElement('canvas');
+  canvas.width = dw; canvas.height = dh;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Seu navegador não conseguiu processar a imagem.');
+  ctx.drawImage(fonte, 0, 0, dw, dh);
+  return new Promise((ok, erro) => canvas.toBlob(b => (b ? ok(b) : erro(new Error('Falha ao preparar o escudo.'))), 'image/png'));
+}
+
+export async function enviarEscudo(escolaId: string, atletaId: string, blob: Blob): Promise<string> {
+  const caminho = `${escolaId}/${atletaId}/escudo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.png`;
+  const { error } = await supabase.storage.from(BUCKET_FOTOS).upload(caminho, blob, { contentType: 'image/png', cacheControl: '31536000', upsert: false });
+  if (error) throw new Error(error.message);
+  return supabase.storage.from(BUCKET_FOTOS).getPublicUrl(caminho).data.publicUrl;
+}
