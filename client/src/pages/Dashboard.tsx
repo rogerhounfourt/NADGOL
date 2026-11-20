@@ -48,7 +48,7 @@ export default function Dashboard() {
     const num = (a.phone || '').replace(/\D/g, '');
     if (num.length < 10) return null;
     const idade = hoje.getFullYear() - Number(a.birthDate.slice(0, 4));
-    const msg = `Parabéns, ${a.name.split(' ')[0]}! 🎉⚽ A família Nadgol Academy deseja um dia incrível e um novo ciclo cheio de gols, evolução e conquistas. Feliz aniversário de ${idade} anos!`;
+    const msg = `Parabéns, ${a.name.split(' ')[0]}! A família Nadgol Academy deseja um dia incrível e um novo ciclo cheio de gols, evolução e conquistas. Feliz aniversário de ${idade} anos!`;
     return `https://wa.me/${num.startsWith('55') && num.length >= 12 ? num : '55' + num}?text=${encodeURIComponent(msg)}`;
   };
   const pendingPayments = financial.filter(f => f.status === 'pending' || f.status === 'overdue').length;
