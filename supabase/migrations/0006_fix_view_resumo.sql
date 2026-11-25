@@ -1,9 +1,9 @@
 -- 0006_fix_view_resumo.sql
--- Corrige a view nadgol_atletas_resumo que falhou no 0005
--- porque referenciava nadgol_estatisticas (inexistente).
--- Restaura o padrão original (subselects) e adiciona os novos campos.
+-- Recria a view nadgol_atletas_resumo após alteração de colunas em 0005
 
-create or replace view public.nadgol_atletas_resumo
+drop view if exists public.nadgol_atletas_resumo;
+
+create view public.nadgol_atletas_resumo
   with (security_invoker = true) as
 select a.*,
   u.nome as unidade_nome,
