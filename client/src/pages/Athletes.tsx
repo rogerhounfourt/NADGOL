@@ -138,7 +138,7 @@ function AtletaForm({ atleta, classes, role, onClose }: { atleta?: Athlete; clas
     { name: 'pesoKg', label: 'Peso (kg)', type: 'number', half: true },
     { name: 'telefone', label: 'Telefone do responsável', type: 'tel', half: true, placeholder: '(00) 00000-0000' },
     { name: 'clubeFavorito', label: 'Clube que torce', half: true },
-    ...(equipe && editando ? [{ name: 'status', label: 'Situação', type: 'select' as const, half: true, options: [{ value: 'ativo', label: 'Ativo' }, { value: 'inativo', label: 'Inativo' }] }] : []),
+    ...(equipe && editando ? [{ name: 'status', label: 'Situação', type: 'select' as const, half: true, options: [{ value: 'ativo', label: 'Ativo' }, { value: 'inativo', label: 'Inativo' }, { value: 'trancado', label: 'Trancado' }, { value: 'em_clube', label: 'Em clube' }] }] : []),
     ...(admin ? [
       { name: 'valorMensalidade', label: 'Mensalidade (R$)', type: 'number' as const, half: true },
       { name: 'diaVencimento', label: 'Dia do vencimento (1-28)', type: 'number' as const, half: true },
@@ -151,7 +151,7 @@ function AtletaForm({ atleta, classes, role, onClose }: { atleta?: Athlete; clas
   const initial: Record<string, string> | undefined = atleta ? {
     nome: atleta.name, dataNascimento: atleta.birthDate, posicao: vazio(atleta.position), peDominante: atleta.dominantFoot,
     turmaId: atleta.classId, unidadeId: atleta.unitId ?? '', alturaCm: atleta.height ? String(atleta.height) : '', pesoKg: atleta.weight ? String(atleta.weight) : '',
-    telefone: vazio(atleta.phone), clubeFavorito: vazio(atleta.favoriteClub), status: atleta.status === 'active' ? 'ativo' : 'inativo',
+    telefone: vazio(atleta.phone), clubeFavorito: vazio(atleta.favoriteClub), status: ({ active: 'ativo', inactive: 'inativo', locked: 'trancado', at_club: 'em_clube' } as Record<string,string>)[atleta.status] ?? 'inativo',
     valorMensalidade: atleta.monthlyFee != null ? String(atleta.monthlyFee) : '', diaVencimento: atleta.dueDay != null ? String(atleta.dueDay) : '',
     sonho: vazio(atleta.dream), objetivo: vazio(atleta.goal), observacoes: vazio(atleta.observations),
   } : undefined;
@@ -181,7 +181,7 @@ function AtletaForm({ atleta, classes, role, onClose }: { atleta?: Athlete; clas
           id: atleta.id, nome: v.nome, dataNascimento: v.dataNascimento, posicao: v.posicao, peDominante: v.peDominante,
           alturaCm: altura(v.alturaCm) ?? null, pesoKg: num(v.pesoKg) ?? null, telefone: v.telefone, clubeFavorito: v.clubeFavorito,
           sonho: v.sonho, objetivo: v.objetivo, observacoes: v.observacoes,
-          ...(equipe ? { status: (v.status || undefined) as 'ativo' | 'inativo' | undefined, unidadeId: v.unidadeId ?? '', turmaId: v.turmaId ?? '', turmaAnteriorId: atleta.classId } : {}),
+          ...(equipe ? { status: (v.status || undefined) as 'ativo' | 'inativo' | 'trancado' | 'em_clube' | undefined, unidadeId: v.unidadeId ?? '', turmaId: v.turmaId ?? '', turmaAnteriorId: atleta.classId } : {}),
           ...(admin ? { valorMensalidade: num(v.valorMensalidade) ?? null, diaVencimento: dia(v.diaVencimento) ?? null } : {}),
           foto, fotoAtual: atleta.photo,
         }, { onSuccess: onClose });
@@ -331,14 +331,13 @@ export default function Athletes() {
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '10px' }}>
               <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '11px', color: 'rgba(255,255,255,0.3)' }}>{athlete.unit}</span>
-              <span style={{
-                fontFamily: 'DM Sans, sans-serif', fontSize: '11px',
-                color: athlete.status === 'active' ? '#22C55E' : '#EF4444',
-                background: athlete.status === 'active' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
-                padding: '2px 8px', borderRadius: '4px',
-              }}>
-                {athlete.status === 'active' ? 'Ativo' : 'Inativo'}
-              </span>
+              {(() => {
+                const st = { active: { l: 'Ativo', c: '#22C55E', b: 'rgba(34,197,94,0.1)' }, inactive: { l: 'Inativo', c: '#EF4444', b: 'rgba(239,68,68,0.1)' }, locked: { l: 'Trancado', c: '#F59E0B', b: 'rgba(245,158,11,0.1)' }, at_club: { l: 'Em clube', c: '#3B82F6', b: 'rgba(59,130,246,0.1)' } }[athlete.status] ?? { l: athlete.status, c: '#888', b: 'rgba(136,136,136,0.1)' };
+                return <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '11px', color: st.c, background: st.b, padding: '2px 8px', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  {athlete.status === 'at_club' && athlete.clubeAtualEscudo && <img src={athlete.clubeAtualEscudo} alt="" style={{ width: 14, height: 14, borderRadius: 2, objectFit: 'contain' }} />}
+                  {st.l}
+                </span>;
+              })()}
             </div>
           </div>
         ))}

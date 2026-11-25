@@ -35,7 +35,9 @@ export interface Athlete {
   dream?: string;
   favoriteClub?: string;
   classId: string;
-  status: 'active' | 'inactive';
+  status: 'active' | 'inactive' | 'locked' | 'at_club';
+  clubeAtualNome?: string;
+  clubeAtualEscudo?: string;
   ranking?: number;
   goals?: number;
   assists?: number;

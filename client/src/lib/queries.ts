@@ -35,7 +35,8 @@ function paraAthlete(r: any): Athlete {
     phone: r.telefone ?? '—', unit: r.unidade_nome ?? '—', unitId: r.unidade_id ?? undefined,
     observations: r.observacoes ?? undefined, goal: r.objetivo ?? undefined, dream: r.sonho ?? undefined,
     favoriteClub: r.clube_favorito ?? undefined, classId: r.turma_id ?? '',
-    status: r.status === 'ativo' ? 'active' : 'inactive',
+    status: ({ ativo: 'active', inativo: 'inactive', trancado: 'locked', em_clube: 'at_club' } as const)[r.status as string] ?? 'inactive',
+    clubeAtualNome: r.clube_atual_nome ?? undefined, clubeAtualEscudo: r.clube_atual_escudo ?? undefined,
     goals: r.gols ?? 0, assists: r.assistencias ?? 0, attendance: r.presenca_pct ?? 0,
     monthlyFee: r.valor_mensalidade != null ? Number(r.valor_mensalidade) : undefined, dueDay: r.dia_vencimento ?? undefined,
   };
@@ -106,7 +107,8 @@ export interface EdicaoAtleta {
   nome?: string; dataNascimento?: string; posicao?: string; peDominante?: string;
   alturaCm?: number | null; pesoKg?: number | null; telefone?: string; clubeFavorito?: string;
   sonho?: string; objetivo?: string; observacoes?: string;
-  /** só equipe */ status?: 'ativo' | 'inativo'; unidadeId?: string;
+  /** só equipe */ status?: 'ativo' | 'inativo' | 'trancado' | 'em_clube'; unidadeId?: string;
+  clubeAtualNome?: string | null; clubeAtualEscudo?: string | null;
   /** só administrador */ valorMensalidade?: number | null; diaVencimento?: number | null;
   /** só equipe: trocar de turma */ turmaId?: string; turmaAnteriorId?: string;
   /** undefined = não mexeu · Blob = nova foto · null = remover */ foto?: Blob | null; fotoAtual?: string;
@@ -117,6 +119,7 @@ const MAPA_CAMPOS: Record<string, string> = {
   alturaCm: 'altura_cm', pesoKg: 'peso_kg', telefone: 'telefone', clubeFavorito: 'clube_favorito',
   sonho: 'sonho', objetivo: 'objetivo', observacoes: 'observacoes', status: 'status', unidadeId: 'unidade_id',
   valorMensalidade: 'valor_mensalidade', diaVencimento: 'dia_vencimento',
+  clubeAtualNome: 'clube_atual_nome', clubeAtualEscudo: 'clube_atual_escudo',
 };
 
 /** Edita o cadastro: aluno, responsável (dados pessoais e foto) e equipe/administrador. A regra de quem pode o quê fica no banco. */
