@@ -31,14 +31,38 @@ export default function PublicEnrollment() {
   const [comoConheceu, setComoConheceu] = useState('');
   const [observacoes, setObservacoes] = useState('');
 
+  const [escolaFixa, setEscolaFixa] = useState<Escola | null>(null);
+
   useEffect(() => {
-    supabase.from('nadgol_escolas').select('id, nome, escudo_url').then(({ data }) => {
-      if (data) {
-        setEscolas(data);
-        if (data.length === 1) setEscolaId(data[0].id);
-      }
-      setLoading(false);
-    });
+    const params = new URLSearchParams(window.location.search);
+    const escolaParam = params.get('escola');
+
+    if (escolaParam) {
+      // Link direto com escola — busca só essa
+      supabase.from('nadgol_escolas').select('id, nome, escudo_url')
+        .eq('id', escolaParam).single()
+        .then(({ data }) => {
+          if (data) {
+            setEscolaFixa(data);
+            setEscolaId(data.id);
+          } else {
+            // ID inválido — busca todas como fallback
+            supabase.from('nadgol_escolas').select('id, nome, escudo_url').then(({ data: all }) => {
+              if (all) { setEscolas(all); if (all.length === 1) setEscolaId(all[0].id); }
+            });
+          }
+          setLoading(false);
+        });
+    } else {
+      // Sem parâmetro — busca todas
+      supabase.from('nadgol_escolas').select('id, nome, escudo_url').then(({ data }) => {
+        if (data) {
+          setEscolas(data);
+          if (data.length === 1) setEscolaId(data[0].id);
+        }
+        setLoading(false);
+      });
+    }
   }, []);
 
   function formatPhone(v: string) {
@@ -104,17 +128,17 @@ export default function PublicEnrollment() {
     <div style={styles.wrapper}>
       <div style={styles.card}>
         <div style={{ textAlign: 'center' as const, marginBottom: '28px' }}>
-          {escolas.length === 1 && escolas[0].escudo_url && (
-            <img src={escolas[0].escudo_url} alt="" style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', margin: '0 auto 12px' }} />
+          {(escolaFixa?.escudo_url || (escolas.length === 1 && escolas[0].escudo_url)) && (
+            <img src={escolaFixa?.escudo_url || escolas[0].escudo_url} alt="" style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', margin: '0 auto 12px' }} />
           )}
           <h1 style={styles.title}>Pré-Matrícula</h1>
-          <p style={{ color: '#A0A0A0', fontSize: '14px', marginTop: '4px' }}>Nadgol Academy</p>
+          <p style={{ color: '#A0A0A0', fontSize: '14px', marginTop: '4px' }}>{escolaFixa?.nome || 'Nadgol Academy'}</p>
         </div>
 
         {error && <div style={styles.errorBox}>{error}</div>}
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {escolas.length > 1 && (
+          {!escolaFixa && escolas.length > 1 && (
             <div>
               <label style={styles.label}>Escola *</label>
               <select value={escolaId} onChange={e => setEscolaId(e.target.value)} required style={styles.input}>
