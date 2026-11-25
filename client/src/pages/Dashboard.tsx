@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'wouter';
 import { useAthletes, useFinancial, useDashboard, competenciaAtual } from '@/lib/queries';
 import { Loading, ErrorState } from '@/components/PageState';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
@@ -23,6 +24,7 @@ function AnimatedNumber({ value, duration = 1200 }: { value: number; duration?: 
 
 export default function Dashboard() {
   const { currentUser } = useApp();
+  const [, navigate] = useLocation();
   const equipe = currentUser?.role === 'admin' || currentUser?.role === 'coach';
   const atl = useAthletes();
   const fin = useFinancial(competenciaAtual());
@@ -66,7 +68,7 @@ export default function Dashboard() {
   if (atl.isLoading || dash.isLoading) return <Loading />;
   if (atl.isError || dash.isError) return <ErrorState onRetry={() => { atl.refetch(); dash.refetch(); }} />;
 
-  const StatCard = ({ icon: Icon, label, value, sub, color, delay }: any) => (
+  const StatCard = ({ icon: Icon, label, value, sub, color, delay, href }: any) => (
     <div
       style={{
         padding: '20px',
@@ -78,6 +80,7 @@ export default function Dashboard() {
         transition: 'all 200ms ease-out',
         cursor: 'pointer',
       }}
+      onClick={() => { if (href) navigate(href); }}
       onMouseEnter={(e) => {
         e.currentTarget.style.background = '#1A1A1A';
         e.currentTarget.style.borderColor = '#2A2A2A';
@@ -105,7 +108,7 @@ export default function Dashboard() {
     </div>
   );
 
-  const ChartCard = ({ title, children, delay }: any) => (
+  const ChartCard = ({ title, children, delay, onClick }: any) => (
     <div
       style={{
         padding: '24px',
@@ -114,7 +117,12 @@ export default function Dashboard() {
         borderRadius: '8px',
         opacity: 0,
         animation: `fadeInUp 0.5s cubic-bezier(0.23, 1, 0.32, 1) ${delay}ms forwards`,
+        cursor: onClick ? 'pointer' : undefined,
+        transition: 'border-color 200ms',
       }}
+      onClick={onClick}
+      onMouseEnter={(e: any) => { if (onClick) e.currentTarget.style.borderColor = '#2A2A2A'; }}
+      onMouseLeave={(e: any) => { if (onClick) e.currentTarget.style.borderColor = '#1E1E1E'; }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
         <div style={{ width: '3px', height: '18px', background: '#CC1A1A', borderRadius: '2px' }} />
@@ -185,12 +193,12 @@ export default function Dashboard() {
 
       {/* Key Metrics Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '32px' }}>
-        <StatCard icon={Users} label="Total de Atletas" value={totalAthletes} color="#CC1A1A" delay={50} />
-        <StatCard icon={UserCheck} label="Presentes Hoje" value={presentToday} sub="Hoje" color="#22C55E" delay={100} />
-        <StatCard icon={UserX} label="Ausentes" value={absentToday} color="#EF4444" delay={150} />
-        <StatCard icon={AlertCircle} label="Atrasados" value={lateToday} color="#EAB308" delay={200} />
-        <StatCard icon={TrendingUp} label="Taxa de Presença" value={`${attendanceRate}%`} color="#3B82F6" delay={250} />
-        <StatCard icon={Trophy} label="Competições" value={competitionsCount} color="#A855F7" delay={300} />
+        <StatCard icon={Users} label="Total de Atletas" value={totalAthletes} color="#CC1A1A" delay={50} href="/athletes" />
+        <StatCard icon={UserCheck} label="Presentes Hoje" value={presentToday} sub="Hoje" color="#22C55E" delay={100} href="/attendance" />
+        <StatCard icon={UserX} label="Ausentes" value={absentToday} color="#EF4444" delay={150} href="/attendance" />
+        <StatCard icon={AlertCircle} label="Atrasados" value={lateToday} color="#EAB308" delay={200} href="/attendance" />
+        <StatCard icon={TrendingUp} label="Taxa de Presença" value={`${attendanceRate}%`} color="#3B82F6" delay={250} href="/attendance" />
+        <StatCard icon={Trophy} label="Competições" value={competitionsCount} color="#A855F7" delay={300} href="/competitions" />
       </div>
 
       {/* Main Charts Grid */}
@@ -243,7 +251,7 @@ export default function Dashboard() {
         </ChartCard>
 
         {/* Financial Status */}
-        <ChartCard title="Status Financeiro" delay={500}>
+        <ChartCard title="Status Financeiro" delay={500} onClick={() => navigate('/financial')}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: '#1A1A1A', borderRadius: '6px', border: '1px solid #2A2A2A' }}>
               <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: 'rgba(255,255,255,0.7)' }}>Pagos</span>
@@ -283,15 +291,15 @@ export default function Dashboard() {
           </h3>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
-          <div style={{ padding: '12px', background: '#1A1A1A', borderRadius: '6px', border: '1px solid #2A2A2A', cursor: 'pointer', transition: 'all 200ms' }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#CC1A1A'; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#2A2A2A'; }}>
+          <div onClick={() => navigate('/athletes')} style={{ padding: '12px', background: '#1A1A1A', borderRadius: '6px', border: '1px solid #2A2A2A', cursor: 'pointer', transition: 'all 200ms' }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#CC1A1A'; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#2A2A2A'; }}>
             <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}>Aniversariantes</p>
             <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '20px', fontWeight: 700, color: '#EAB308' }}>{birthdays.length}</p>
           </div>
-          <div style={{ padding: '12px', background: '#1A1A1A', borderRadius: '6px', border: '1px solid #2A2A2A', cursor: 'pointer', transition: 'all 200ms' }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#CC1A1A'; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#2A2A2A'; }}>
+          <div onClick={() => navigate('/financial')} style={{ padding: '12px', background: '#1A1A1A', borderRadius: '6px', border: '1px solid #2A2A2A', cursor: 'pointer', transition: 'all 200ms' }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#CC1A1A'; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#2A2A2A'; }}>
             <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}>Mensalidades Pendentes</p>
             <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '20px', fontWeight: 700, color: '#EF4444' }}>{pendingPayments}</p>
           </div>
-          <div style={{ padding: '12px', background: '#1A1A1A', borderRadius: '6px', border: '1px solid #2A2A2A', cursor: 'pointer', transition: 'all 200ms' }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#CC1A1A'; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#2A2A2A'; }}>
+          <div onClick={() => navigate('/competitions')} style={{ padding: '12px', background: '#1A1A1A', borderRadius: '6px', border: '1px solid #2A2A2A', cursor: 'pointer', transition: 'all 200ms' }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#CC1A1A'; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#2A2A2A'; }}>
             <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}>Próximas Competições</p>
             <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '20px', fontWeight: 700, color: '#A855F7' }}>{competitionsCount}</p>
           </div>
