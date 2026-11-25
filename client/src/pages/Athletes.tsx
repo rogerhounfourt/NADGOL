@@ -1,18 +1,18 @@
 import { useState } from 'react';
 import { getCategory, getAge, type Athlete, type TrainingClass, type UserRole } from '@/lib/data';
 import { useApp } from '@/contexts/AppContext';
-import { useAthletes, useClasses, useUnits, useCreateAthlete, useUpdateAthlete, useAthleteMetrics } from '@/lib/queries';
+import { useAthletes, useClasses, useUnits, useCreateAthlete, useDeactivateAthlete, useUpdateAthlete, useAthleteMetrics } from '@/lib/queries';
 import AvatarAtleta from '@/components/AvatarAtleta';
 import FotoUpload from '@/components/FotoUpload';
 import ReportButton from '@/components/ReportButton';
 import { relatorioEscola } from '@/lib/relatorios';
 import FormModal, { type FormField } from '@/components/FormModal';
 import { Loading, Empty, ErrorState } from '@/components/PageState';
-import { Search, Plus, ChevronRight, X, Pencil } from 'lucide-react';
+import { Search, Plus, ChevronRight, X, Pencil, Trash2 } from 'lucide-react';
 
 const POSITIONS = ['Todos', 'Atacante', 'Meio-Campo', 'Zagueiro', 'Lateral', 'Goleiro'];
 
-function AthleteModal({ athlete, onClose, onEdit }: { athlete: Athlete; onClose: () => void; onEdit?: () => void }) {
+function AthleteModal({ athlete, onClose, onEdit, onDeactivate }: { athlete: Athlete; onClose: () => void; onEdit?: () => void; onDeactivate?: () => void }) {
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
       onClick={onClose}>
@@ -105,6 +105,11 @@ function AthleteModal({ athlete, onClose, onEdit }: { athlete: Athlete; onClose:
           {onEdit && (
             <button onClick={onEdit} className="nadgol-btn-primary" style={{ marginTop: '16px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '11px 16px', borderRadius: '6px', fontSize: '13px', border: 'none', cursor: 'pointer' }}>
               <Pencil size={15} /> Editar cadastro
+            </button>
+          )}
+          {onDeactivate && (
+            <button onClick={onDeactivate} style={{ marginTop: '8px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '11px 16px', borderRadius: '6px', fontSize: '13px', border: '1px solid rgba(255,60,60,0.3)', background: 'rgba(255,40,40,0.08)', color: '#ff5555', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', fontWeight: 600 }}>
+              <Trash2 size={15} /> Desativar aluno
             </button>
           )}
         </div>
@@ -201,6 +206,7 @@ export default function Athletes() {
   const { data: classes = [] } = useClasses();
   const metricas = useAthleteMetrics();
   const role = currentUser?.role ?? 'athlete';
+  const desativar = useDeactivateAthlete();
   const canEdit = role === 'admin' || role === 'coach';
   // Aluno e responsável só enxergam o(s) próprio(s) cadastro(s) (regra do banco), então podem editar o que aparece.
   const podeEditarCadastro = canEdit || role === 'parent' || role === 'athlete';
@@ -344,7 +350,7 @@ export default function Athletes() {
       </div>
 
       {selected && !editing && (
-        <AthleteModal athlete={selected} onClose={() => setSelectedId(null)} onEdit={podeEditarCadastro ? () => setEditingId(selected.id) : undefined} />
+        <AthleteModal athlete={selected} onClose={() => setSelectedId(null)} onEdit={podeEditarCadastro ? () => setEditingId(selected.id) : undefined} onDeactivate={canEdit ? () => { if (window.confirm('Deseja desativar este aluno? O historico sera preservado.')) { desativar.mutate(selected.id); setSelectedId(null); } } : undefined} />
       )}
       {creating && <AtletaForm classes={classes} role={role} onClose={() => setCreating(false)} />}
       {editing && <AtletaForm atleta={editing} classes={classes} role={role} onClose={() => setEditingId(null)} />}

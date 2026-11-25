@@ -123,6 +123,21 @@ const MAPA_CAMPOS: Record<string, string> = {
 };
 
 /** Edita o cadastro: aluno, responsável (dados pessoais e foto) e equipe/administrador. A regra de quem pode o quê fica no banco. */
+// Soft-delete: desativa o atleta (status -> inativo)
+export function useDeactivateAthlete() {
+  const { escolaId, demo } = useEscola();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      if (demo) { avisoDemo(); return; }
+      const { error } = await supabase.rpc('nadgol_atualizar_atleta', { p_atleta: id, p: { status: 'inativo' } });
+      falha(error);
+    },
+    onSuccess: () => { toast.success('Atleta desativado.'); qc.invalidateQueries({ queryKey: ['atletas'] }); qc.invalidateQueries({ queryKey: ['ranking'] }); },
+    onError: erroPadrao,
+  });
+}
+
 export function useUpdateAthlete() {
   const { escolaId, demo } = useEscola();
   const qc = useQueryClient();
