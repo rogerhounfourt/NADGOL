@@ -797,6 +797,99 @@ export function useCreateCompetition() {
   });
 }
 
+export function useEditCompetition() {
+  const { escolaId, demo } = useEscola();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { id: string; nome: string; data: string; local?: string; resultado?: string }) => {
+      if (demo) { avisoDemo(); return; }
+      const { error } = await supabase.from('nadgol_competicoes')
+        .update({ nome: v.nome.trim(), data: v.data, local: v.local?.trim() || null, resultado: v.resultado?.trim() || null })
+        .eq('id', v.id).eq('escola_id', escolaId);
+      falha(error);
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['competicoes'] }); toast.success('Competição atualizada.'); },
+    onError: erroPadrao,
+  });
+}
+
+export function useDeleteCompetition() {
+  const { escolaId, demo } = useEscola();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      if (demo) { avisoDemo(); return; }
+      const { error } = await supabase.from('nadgol_competicoes').delete().eq('id', id).eq('escola_id', escolaId);
+      falha(error);
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['competicoes'] }); qc.invalidateQueries({ queryKey: ['dashboard'] }); toast.success('Competição excluída.'); },
+    onError: erroPadrao,
+  });
+}
+
+export interface InscricaoAtleta { atleta_id: string; numero_camisa: number | null }
+
+export function useCompetitionAthletes(competicaoId: string | null) {
+  const { escolaId, demo } = useEscola();
+  return useQuery({
+    queryKey: ['competicao-atletas', competicaoId],
+    enabled: !demo && !!competicaoId && !!escolaId,
+    queryFn: async (): Promise<InscricaoAtleta[]> => {
+      const { data, error } = await supabase.from('nadgol_competicoes_atletas')
+        .select('atleta_id, numero_camisa')
+        .eq('competicao_id', competicaoId!).eq('escola_id', escolaId);
+      falha(error);
+      return (data ?? []).map((r: any) => ({ atleta_id: r.atleta_id, numero_camisa: r.numero_camisa ?? null }));
+    },
+  });
+}
+
+export function useEnrollAthlete() {
+  const { escolaId, demo } = useEscola();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { competicaoId: string; atletaId: string; numeroCamisa?: number }) => {
+      if (demo) { avisoDemo(); return; }
+      const { error } = await supabase.from('nadgol_competicoes_atletas')
+        .upsert({ competicao_id: v.competicaoId, atleta_id: v.atletaId, escola_id: escolaId, numero_camisa: v.numeroCamisa ?? null }, { onConflict: 'competicao_id,atleta_id' });
+      falha(error);
+    },
+    onSuccess: (_d, v) => { qc.invalidateQueries({ queryKey: ['competicao-atletas', v.competicaoId] }); qc.invalidateQueries({ queryKey: ['competicoes'] }); },
+    onError: erroPadrao,
+  });
+}
+
+export function useRemoveEnrollment() {
+  const { escolaId, demo } = useEscola();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { competicaoId: string; atletaId: string }) => {
+      if (demo) { avisoDemo(); return; }
+      const { error } = await supabase.from('nadgol_competicoes_atletas')
+        .delete().eq('competicao_id', v.competicaoId).eq('atleta_id', v.atletaId).eq('escola_id', escolaId);
+      falha(error);
+    },
+    onSuccess: (_d, v) => { qc.invalidateQueries({ queryKey: ['competicao-atletas', v.competicaoId] }); qc.invalidateQueries({ queryKey: ['competicoes'] }); },
+    onError: erroPadrao,
+  });
+}
+
+export function useUpdateShirtNumber() {
+  const { escolaId, demo } = useEscola();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { competicaoId: string; atletaId: string; numero: number | null }) => {
+      if (demo) { avisoDemo(); return; }
+      const { error } = await supabase.from('nadgol_competicoes_atletas')
+        .update({ numero_camisa: v.numero })
+        .eq('competicao_id', v.competicaoId).eq('atleta_id', v.atletaId).eq('escola_id', escolaId);
+      falha(error);
+    },
+    onSuccess: (_d, v) => { qc.invalidateQueries({ queryKey: ['competicao-atletas', v.competicaoId] }); },
+    onError: erroPadrao,
+  });
+}
+
 // ----------------------------------------------------------------------------
 // Jogos (partidas) e estatísticas por atleta
 // ----------------------------------------------------------------------------
