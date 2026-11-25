@@ -1348,3 +1348,62 @@ export function useMatchLog(atletaId: string) {
     },
   });
 }
+
+
+// ----------------------------------------------------------------------------
+// Pré-Matrículas
+// ----------------------------------------------------------------------------
+export interface PreMatricula {
+  id: string;
+  escola_id: string;
+  nome_atleta: string;
+  data_nascimento: string;
+  sexo: 'M' | 'F';
+  posicao: string | null;
+  pe_dominante: string | null;
+  nome_responsavel: string;
+  telefone_responsavel: string;
+  email_responsavel: string | null;
+  parentesco: string | null;
+  bairro: string | null;
+  cidade: string | null;
+  como_conheceu: string | null;
+  observacoes: string | null;
+  status: 'pendente' | 'aprovada' | 'rejeitada';
+  motivo_rejeicao: string | null;
+  aprovada_em: string | null;
+  criado_em: string;
+}
+
+export function usePreMatriculas() {
+  const { escolaId, demo } = useEscola();
+  return useQuery({
+    queryKey: ['pre-matriculas', escolaId],
+    enabled: !demo && !!escolaId,
+    queryFn: async (): Promise<PreMatricula[]> => {
+      const { data, error } = await supabase.from('nadgol_pre_matriculas')
+        .select('*').eq('escola_id', escolaId).order('criado_em', { ascending: false });
+      falha(error);
+      return (data ?? []) as PreMatricula[];
+    },
+  });
+}
+
+export function useUpdatePreMatricula() {
+  const qc = useQueryClient();
+  const { escolaId, userId } = useEscola();
+  return useMutation({
+    mutationFn: async (vars: { id: string; status: 'aprovada' | 'rejeitada'; motivo_rejeicao?: string }) => {
+      const payload: Record<string, unknown> = { status: vars.status };
+      if (vars.status === 'aprovada') {
+        payload.aprovada_por = userId;
+        payload.aprovada_em = new Date().toISOString();
+      }
+      if (vars.motivo_rejeicao) payload.motivo_rejeicao = vars.motivo_rejeicao;
+      const { error } = await supabase.from('nadgol_pre_matriculas').update(payload).eq('id', vars.id);
+      falha(error);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['pre-matriculas', escolaId] }),
+    onError: erroPadrao,
+  });
+}

@@ -15,6 +15,8 @@ import SemVinculo from "./pages/SemVinculo";
 import TrocarSenha from "./pages/TrocarSenha";
 import { canAccess, SECOES_CONECTADAS } from "./lib/permissions";
 
+const PublicEnrollment = lazy(() => import("./pages/PublicEnrollment"));
+
 // Cada tela é baixada só quando é aberta (carregamento inicial bem menor)
 const PAGE_MAP: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
   dashboard: lazy(() => import("./pages/Dashboard")),
@@ -40,6 +42,7 @@ const PAGE_MAP: Record<string, React.LazyExoticComponent<React.ComponentType>> =
   chat: lazy(() => import("./pages/Chat")),
   access: lazy(() => import("./pages/Access")),
   settings: lazy(() => import("./pages/Settings")),
+  preenrollment: lazy(() => import("./pages/PreEnrollment")),
 };
 
 const queryClient = new QueryClient({
@@ -117,7 +120,32 @@ function AppContent() {
   );
 }
 
+/** Detecta se estamos no subdomínio público de cadastro */
+function isCadastroSubdomain(): boolean {
+  const host = window.location.hostname;
+  return host.startsWith('cadastro.');
+}
+
 function App() {
+  const isCadastro = isCadastroSubdomain();
+
+  if (isCadastro) {
+    return (
+      <ErrorBoundary>
+        <ThemeProvider defaultTheme="dark">
+          <QueryClientProvider client={queryClient}>
+            <TooltipProvider>
+              <Toaster />
+              <Suspense fallback={<FullScreenLoading />}>
+                <PublicEnrollment />
+              </Suspense>
+            </TooltipProvider>
+          </QueryClientProvider>
+        </ThemeProvider>
+      </ErrorBoundary>
+    );
+  }
+
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="dark">

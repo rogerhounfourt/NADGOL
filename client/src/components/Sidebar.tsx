@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Users, UserCheck, ClipboardList, Activity,
   Trophy, DollarSign, TrendingUp, Medal, Bell, MessageSquare,
   Settings, ChevronLeft, ChevronRight, LogOut, Zap, BookOpen, Eye, Brain, Heart, Radar, Clipboard, Lightbulb, KeyRound
-} from 'lucide-react';
+, UserPlus } from 'lucide-react';
 
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -30,7 +30,8 @@ const NAV_ITEMS = [
   { id: 'ranking', label: 'Ranking', icon: Medal },
   { id: 'notifications', label: 'Notificações', icon: Bell },
   { id: 'chat', label: 'Chat Interno', icon: MessageSquare },
-  { id: 'access', label: 'Acessos', icon: KeyRound },
+  { id: 'preenrollment', label: 'Pré-Matrículas', icon: UserPlus },
+    { id: 'access', label: 'Acessos', icon: KeyRound },
   { id: 'settings', label: 'Configurações', icon: Settings },
 ];
 
