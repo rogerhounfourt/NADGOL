@@ -123,7 +123,17 @@ function AppContent() {
 /** Detecta se estamos no subdomínio público de cadastro */
 function isCadastroSubdomain(): boolean {
   const host = window.location.hostname;
-  return host.startsWith('cadastro.');
+  return host.startsWith('cadastro.') || slugDaEscola() !== null;
+}
+
+// <slug>.nadgolacademy.com.br abre o formulário público da escola com esse apelido
+export function slugDaEscola(): string | null {
+  const host = window.location.hostname.toLowerCase();
+  const suf = '.nadgolacademy.com.br';
+  if (!host.endsWith(suf)) return null;
+  const label = host.slice(0, -suf.length);
+  if (!label || label.includes('.') || ['www', 'cadastro', 'app'].includes(label)) return null;
+  return label;
 }
 
 function App() {

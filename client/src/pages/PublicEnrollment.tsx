@@ -36,11 +36,15 @@ export default function PublicEnrollment() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const escolaParam = params.get('escola');
+    const host = window.location.hostname.toLowerCase();
+    const suf = '.nadgolacademy.com.br';
+    const lbl = host.endsWith(suf) ? host.slice(0, -suf.length) : '';
+    const slug = lbl && !lbl.includes('.') && !['www', 'cadastro', 'app'].includes(lbl) ? lbl : null;
 
-    if (escolaParam) {
+    if (slug || escolaParam) {
       // Link direto com escola — busca só essa
-      supabase.from('nadgol_escolas').select('id, nome, escudo_url')
-        .eq('id', escolaParam).single()
+      const q = supabase.from('nadgol_escolas').select('id, nome, escudo_url');
+      (slug ? q.eq('slug', slug) : q.eq('id', escolaParam as string)).maybeSingle()
         .then(({ data }) => {
           if (data) {
             setEscolaFixa(data);
