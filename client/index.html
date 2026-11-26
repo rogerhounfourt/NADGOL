@@ -2,6 +2,17 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      // nadgolacademy.com.br e www mostram a landing page; o sistema fica em app.nadgolacademy.com.br
+      if (/^(www\.)?nadgolacademy\.com\.br$/i.test(location.hostname)) {
+        try {
+          var x = new XMLHttpRequest();
+          x.open('GET', '/landing.html', false);
+          x.send();
+          if (x.status === 200) { document.open(); document.write(x.responseText); document.close(); }
+        } catch (e) {}
+      }
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover" />
     <title>Nadgol Academy</title>
     <meta name="theme-color" content="#080808" />
