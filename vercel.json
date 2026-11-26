@@ -1,7 +1,10 @@
 {
   "buildCommand": "pnpm exec vite build",
   "outputDirectory": "dist/public",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
+  "rewrites": [
+    { "source": "/(.*)", "has": [{ "type": "host", "value": "(www\\.)?nadgolacademy\\.com\\.br" }], "destination": "/landing.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
   "headers": [
     {
       "source": "/(.*)",
