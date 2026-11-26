@@ -3,8 +3,27 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Nadgol Academy</title>
-<meta name="description" content="Plataforma de gestão para escolinhas de futebol: atletas, turmas, presença, mensalidades, desempenho e pré-matrícula online em um só lugar.">
+<title>Nadgol Academy | Sistema para escolinhas de futebol</title>
+<meta name="description" content="Gestão completa para escolinhas de futebol: atletas, turmas, presença, mensalidades, desempenho e pré-matrícula online. Peça uma demonstração.">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<link rel="canonical" href="https://www.nadgolacademy.com.br/">
+<meta name="theme-color" content="#080808">
+<link rel="icon" type="image/svg+xml" href="/escudo-nadgol.svg">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:site_name" content="Nadgol Academy">
+<meta property="og:title" content="Nadgol Academy | Sistema para escolinhas de futebol">
+<meta property="og:description" content="Atletas, turmas, presença, mensalidades e desempenho em um só sistema. Peça uma demonstração.">
+<meta property="og:url" content="https://www.nadgolacademy.com.br/">
+<meta property="og:image" content="https://www.nadgolacademy.com.br/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Nadgol Academy | Sistema para escolinhas de futebol">
+<meta name="twitter:description" content="Atletas, turmas, presença, mensalidades e desempenho em um só sistema.">
+<meta name="twitter:image" content="https://www.nadgolacademy.com.br/og-image.png">
+<script type="application/ld+json">[{"@context": "https://schema.org", "@type": "Organization", "name": "Nadgol Academy", "url": "https://www.nadgolacademy.com.br/", "logo": "https://www.nadgolacademy.com.br/icon-512.png"}, {"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "Nadgol Academy", "applicationCategory": "BusinessApplication", "operatingSystem": "Web", "url": "https://www.nadgolacademy.com.br/", "description": "Sistema de gestão para escolinhas de futebol: atletas, turmas, presença, mensalidades, desempenho e pré-matrícula online."}, {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Preciso instalar alguma coisa?", "acceptedAnswer": {"@type": "Answer", "text": "Não. O sistema abre no navegador, no computador ou no celular. No celular dá para adicioná-lo à tela inicial como um aplicativo."}}, {"@type": "Question", "name": "Quanto custa?", "acceptedAnswer": {"@type": "Answer", "text": "O valor depende do tamanho da escola. Fale com a gente e receba uma proposta sob medida na demonstração."}}, {"@type": "Question", "name": "Meus pais e atletas também têm acesso?", "acceptedAnswer": {"@type": "Answer", "text": "Sim. Você convida cada pessoa por link e ela só enxerga o que o papel permite: o responsável vê o próprio atleta e as mensalidades dele."}}, {"@type": "Question", "name": "Consigo migrar os atletas que já tenho?", "acceptedAnswer": {"@type": "Answer", "text": "Conversamos sobre isso na demonstração, de acordo com o formato em que seus dados estão hoje."}}, {"@type": "Question", "name": "Os dados da minha escola ficam misturados com os de outras?", "acceptedAnswer": {"@type": "Answer", "text": "Não. Cada escola tem seus dados separados, e as regras de acesso são aplicadas no banco de dados."}}]}]</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
@@ -172,6 +191,14 @@ footer{border-top:1px solid var(--line);padding:34px 0;color:var(--muted);font-s
 .foot{display:flex;flex-wrap:wrap;gap:18px;justify-content:space-between;align-items:center}
 .foot .brand svg{width:26px;height:31px}
 .foot .brand b{font-size:20px}
+
+/* Aviso de cookies */
+.cookie{display:none;position:fixed;left:16px;right:16px;bottom:16px;z-index:40;max-width:560px;margin:0 auto;background:var(--elevated);border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:0 20px 60px -10px #000;font-size:14px;color:var(--muted)}
+.cookie.on{display:block}
+.cookie p{margin-bottom:12px}
+.cookie .acts{display:flex;gap:10px}
+.cookie .btn{font-size:15px;padding:9px 16px;min-height:40px;flex:1}
+@media (max-width:640px){.cookie{bottom:88px}}
 
 /* Barra fixa de CTA no celular */
 .sticky-cta{display:none}
@@ -441,16 +468,77 @@ footer{border-top:1px solid var(--line);padding:34px 0;color:var(--muted);font-s
 
 <div class="sticky-cta"><a class="btn btn-red" data-wa href="#contato">Agendar demonstração</a></div>
 
+<div class="cookie" id="cookie" role="dialog" aria-label="Aviso de cookies">
+  <p>Usamos cookies para medir as visitas e melhorar nossos anúncios. Você pode aceitar ou recusar.</p>
+  <div class="acts"><button class="btn btn-red" id="ck-ok" type="button">Aceitar</button><button class="btn btn-line" id="ck-no" type="button">Recusar</button></div>
+</div>
+
 <script>
-/* Troque pelo número real (somente dígitos, com 55 + DDD). Enquanto estiver vazio, os botões levam à seção de contato. */
+/* ===== Configuração (preencher quando tiver os códigos) =====
+   ga4: ID do Google Analytics 4, ex.: "G-XXXXXXXXXX"
+   ads: ID do Google Ads, ex.: "AW-1234567890"; adsLabel: rótulo da conversão, ex.: "AbCdEfGhIj"
+   metaPixel: ID do Pixel da Meta (opcional)
+   Com tudo vazio, nenhuma tag é carregada e o aviso de cookies não aparece. */
+var TRACK = { ga4: "", ads: "", adsLabel: "", metaPixel: "" };
 var WHATSAPP = "5575999987715";
 var MSG = "Olá! Quero conhecer o Nadgol Academy para a minha escolinha.";
-if (WHATSAPP) {
-  document.querySelectorAll("[data-wa]").forEach(function (a) {
-    a.href = "https://wa.me/" + WHATSAPP + "?text=" + encodeURIComponent(MSG);
-    a.target = "_blank"; a.rel = "noopener";
-  });
+
+document.querySelectorAll("[data-wa]").forEach(function (a) {
+  a.href = "https://wa.me/" + WHATSAPP + "?text=" + encodeURIComponent(MSG);
+  a.target = "_blank"; a.rel = "noopener";
+});
+
+window.dataLayer = window.dataLayer || [];
+function gtag(){ dataLayer.push(arguments); }
+var usaGoogle = !!(TRACK.ga4 || TRACK.ads);
+var usaTags = usaGoogle || !!TRACK.metaPixel;
+
+function carregaGoogle() {
+  var id = TRACK.ga4 || TRACK.ads;
+  var sc = document.createElement("script");
+  sc.async = true; sc.src = "https://www.googletagmanager.com/gtag/js?id=" + id;
+  document.head.appendChild(sc);
+  gtag("js", new Date());
+  if (TRACK.ga4) gtag("config", TRACK.ga4);
+  if (TRACK.ads) gtag("config", TRACK.ads);
 }
+function carregaMeta() {
+  if (!TRACK.metaPixel || window.fbq) return;
+  !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version="2.0";n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,"script","https://connect.facebook.net/en_US/fbevents.js");
+  fbq("init", TRACK.metaPixel); fbq("track", "PageView");
+}
+function consente(ok) {
+  if (usaGoogle) gtag("consent", "update", { ad_storage: ok ? "granted" : "denied", ad_user_data: ok ? "granted" : "denied", ad_personalization: ok ? "granted" : "denied", analytics_storage: ok ? "granted" : "denied" });
+  if (ok) carregaMeta();
+}
+
+if (usaGoogle) {
+  /* Consent Mode v2: começa negado e só muda se a pessoa aceitar */
+  gtag("consent", "default", { ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied", analytics_storage: "denied", wait_for_update: 500 });
+  carregaGoogle();
+}
+if (usaTags) {
+  var escolha = null;
+  try { escolha = localStorage.getItem("nadgol-cookies"); } catch (e) {}
+  var box = document.getElementById("cookie");
+  if (escolha === "sim") consente(true);
+  else if (escolha === "nao") consente(false);
+  else box.classList.add("on");
+  function grava(v){ try { localStorage.setItem("nadgol-cookies", v); } catch (e) {} box.classList.remove("on"); consente(v === "sim"); }
+  document.getElementById("ck-ok").onclick = function(){ grava("sim"); };
+  document.getElementById("ck-no").onclick = function(){ grava("nao"); };
+}
+
+/* Conversão: clique em qualquer botão de WhatsApp */
+document.querySelectorAll("[data-wa]").forEach(function (a) {
+  a.addEventListener("click", function () {
+    if (usaGoogle) {
+      gtag("event", "generate_lead", { method: "whatsapp" });
+      if (TRACK.ads && TRACK.adsLabel) gtag("event", "conversion", { send_to: TRACK.ads + "/" + TRACK.adsLabel });
+    }
+    if (window.fbq) fbq("track", "Contact");
+  });
+});
 </script>
 </body>
 </html>
