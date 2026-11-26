@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
-import App from "./App";
-import "./index.css";
+
+// nadgolacademy.com.br e www mostram só a landing (landing.html); o app não deve nem carregar ali.
+const ehLanding = /^(www\.)?nadgolacademy\.com\.br$/i.test(window.location.hostname);
 
 // Depois de um deploy, uma aba antiga pode pedir um arquivo que não existe mais.
 // Nesse caso recarrega sozinha (uma vez a cada 30 s, para nunca entrar em loop).
@@ -16,10 +17,14 @@ function recarregarUmaVez() {
 window.addEventListener("vite:preloadError", (e) => { e.preventDefault(); recarregarUmaVez(); });
 (window as any).__nadgolRecarregar = recarregarUmaVez;
 
-createRoot(document.getElementById("root")!).render(<App />);
+if (!ehLanding) {
+  Promise.all([import("./App"), import("./index.css")]).then(([{ default: App }]) => {
+    createRoot(document.getElementById("root")!).render(<App />);
+  });
+}
 
 // PWA: só em produção (no dev o service worker atrapalharia o hot reload).
-if (import.meta.env.PROD && "serviceWorker" in navigator) {
+if (!ehLanding && import.meta.env.PROD && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js").catch(() => {});
   });
