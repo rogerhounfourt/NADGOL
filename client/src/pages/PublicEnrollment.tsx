@@ -39,7 +39,9 @@ export default function PublicEnrollment() {
     const host = window.location.hostname.toLowerCase();
     const suf = '.nadgolacademy.com.br';
     const lbl = host.endsWith(suf) ? host.slice(0, -suf.length) : '';
-    const slug = lbl && !lbl.includes('.') && !['www', 'cadastro', 'app'].includes(lbl) ? lbl : null;
+    // cadastro.nadgolacademy.com.br é exclusivo da Nadgol Academy; as demais escolas usam <slug>.nadgolacademy.com.br
+    const slug = lbl === 'cadastro' ? 'nadgol'
+      : lbl && !lbl.includes('.') && !['www', 'app'].includes(lbl) ? lbl : null;
 
     if (slug || escolaParam) {
       // Link direto com escola — busca só essa
